@@ -265,6 +265,13 @@ footer{text-align:center;color:var(--text-soft);font-size:.78rem;margin-top:36px
           </div>
         </div>
         <div class="field" style="margin-top:16px">
+          <label class="fl">挑戰模式</label>
+          <div class="radio-row" id="modeRow">
+            <label class="radio-chip sel"><input type="radio" name="mode" value="normal" checked>📝 一般測驗</label>
+            <label class="radio-chip"><input type="radio" name="mode" value="infinity">♾️ 無限挑戰（答錯即結束）</label>
+          </div>
+        </div>
+        <div class="field" style="margin-top:16px">
           <label class="fl">題目來源</label>
           <div class="radio-row" id="sourceRow">
             <label class="radio-chip sel"><input type="radio" name="src" value="歷屆" checked>歷屆考古題精選</label>
@@ -272,7 +279,7 @@ footer{text-align:center;color:var(--text-soft);font-size:.78rem;margin-top:36px
           </div>
         </div>
         <button class="btn btn-full" id="startBtn">🚀 開始測驗</button>
-        <p class="hint">題庫有限，若選擇題數超過該分類題數，系統會以現有題目隨機循環補滿。</p>
+        <p class="hint" id="modeHint">無限挑戰：不限時、無題數上限，答對持續累積連對與分數，一旦答錯立即結算上傳。</p>
       </div>
       <div class="card">
         <h2>🏅 成就徽章牆</h2>
@@ -657,6 +664,14 @@ document.getElementById("sourceRow").addEventListener("change",e=>{
   document.querySelectorAll("#sourceRow .radio-chip").forEach(c=>c.classList.remove("sel"));
   e.target.closest(".radio-chip").classList.add("sel");
 });
+document.getElementById("modeRow").addEventListener("change",e=>{
+  document.querySelectorAll("#modeRow .radio-chip").forEach(c=>c.classList.remove("sel"));
+  e.target.closest(".radio-chip").classList.add("sel");
+  const inf=e.target.value==="infinity";
+  document.getElementById("countSel").disabled=inf;
+  document.getElementById("timeSel").disabled=inf;
+  document.getElementById("startBtn").textContent=inf?"♾️ 開始無限挑戰":"🚀 開始測驗";
+});
 const KEYS=["A","B","C","D"];
 let exam=null, timerId=null;
 function pickQuestions(sub,src,count){
@@ -676,15 +691,37 @@ document.getElementById("startBtn").addEventListener("click",()=>{
   save.name=name; save.code=code; persistSave();
   const sub=document.getElementById("subjectSel").value;
   const src=document.querySelector('input[name="src"]:checked').value;
+  const mode=document.querySelector('input[name="mode"]:checked').value;
+  const isInfinityMode=mode==="infinity";
+
+  if(isInfinityMode){
+    // 無限模式：建立一個夠大的循環題庫
+    const qs=pickQuestions(sub,src,200);
+    if(qs.length===0){ toast("此分類暫無題目"); return; }
+    exam={qs,name,code,sub,src,isInfinityMode:true,isBig:sub==="綜合",
+          idx:0,answered:0,correct:0,combo:0,comboBest:0,currentScore:0,score:0,
+          finished:false,submitted:false,charGain:0,vehGain:0,startTs:Date.now(),timeSpent:0,lbId:null};
+    document.getElementById("lobbyView").style.display="none";
+    document.getElementById("examView").style.display="block";
+    document.getElementById("timer").style.display="none";          // 不顯示倒數
+    document.getElementById("submitBtn").style.display="none";       // 無限模式無「送出」鈕
+    renderInfinityQuestion();
+    window.scrollTo({top:0,behavior:"smooth"});
+    return;
+  }
+
+  // 一般模式
   const count=+document.getElementById("countSel").value;
   const minutes=+document.getElementById("timeSel").value;
   const qs=pickQuestions(sub,src,count);
   if(qs.length===0){ toast("此分類暫無題目"); return; }
-  exam={qs,name,code,sub,src,minutes,isBig:sub==="綜合",answered:0,correct:0,combo:0,comboBest:0,score:0,
+  exam={qs,name,code,sub,src,minutes,isInfinityMode:false,isBig:sub==="綜合",answered:0,correct:0,combo:0,comboBest:0,score:0,
         locked:Array(qs.length).fill(false),finished:false,submitted:false,
         charGain:0,vehGain:0,startTs:Date.now(),timeSpent:0,lbId:null};
   document.getElementById("lobbyView").style.display="none";
   document.getElementById("examView").style.display="block";
+  document.getElementById("timer").style.display="";
+  document.getElementById("submitBtn").style.display="";
   renderQuiz(); startTimer(minutes);
   window.scrollTo({top:0,behavior:"smooth"});
 });
@@ -707,9 +744,107 @@ function renderQuiz(){
     wrap.appendChild(card);
   });
 }
+/* ===== 無限挑戰模式 ===== */
+function renderInfinityQuestion(){
+  const wrap=document.getElementById("quiz"); wrap.innerHTML="";
+  document.getElementById("result").classList.remove("show");
+  document.getElementById("withdrawBtn").style.display="none";
+  document.getElementById("scoreNow").textContent=exam.currentScore;
+  document.getElementById("combo").textContent="🔥 Combo "+exam.combo;
+  const it=exam.qs[exam.idx % exam.qs.length];
+  exam._cur=it;
+  const srcTag=it.src==="歷屆"?(it.year+"年歷屆"):"AI模擬";
+  const opts=it.options.map((o,oi)=>'<button class="opt" data-o="'+oi+'"><span class="key">'+KEYS[oi]+'</span><span>'+o+'</span></button>').join("");
+  const card=document.createElement("div");
+  card.className="q-card";
+  card.innerHTML='<div class="q-meta"><span class="tagp num">第 '+(exam.answered+1)+' 題（無限）</span><span class="tagp sub">'+it.sub+'</span><span class="tagp src">'+srcTag+'</span></div>'
+    +'<div class="q-text">'+it.q+'</div><div class="opts">'+opts+'</div>'
+    +'<div class="explain" id="exp-inf"><span class="law">📖 '+it.law+'</span><span class="vd" id="vd-inf"></span><div style="margin-top:6px">'+it.explain+'</div></div>';
+  wrap.appendChild(card);
+}
+function handleInfinityAnswer(btn){
+  if(exam._locked) return;        // 防重複點擊：本題作答後鎖定
+  exam._locked=true;
+  const oi=+btn.dataset.o;
+  const correctIdx=exam._cur.answer;
+  const card=btn.closest(".q-card");
+  card.querySelectorAll(".opt").forEach((o,idx)=>{o.disabled=true; if(idx===correctIdx)o.classList.add("correct");});
+  const isRight=oi===correctIdx;
+  if(!isRight) btn.classList.add("wrong");
+
+  exam.answered++;
+  const justChecked=addDailyAnswers(1, isRight?1:0);
+  renderDaily();
+  if(justChecked) toast("🔥 今日打卡成功！連勝 "+save.streak+" 天");
+
+  const vd=document.getElementById("vd-inf");
+  vd.textContent=isRight?"　✓ 答對！":"　✗ 答錯，正解為 "+KEYS[correctIdx];
+  vd.style.color=isRight?"var(--correct)":"var(--wrong)";
+  document.getElementById("exp-inf").classList.add("show");
+
+  if(isRight){
+    exam.correct++; exam.combo++;
+    if(exam.combo>exam.comboBest) exam.comboBest=exam.combo;
+    exam.currentScore += 10 + Math.max(0,(exam.combo-1))*2;  // 每題基礎10分，連對遞增
+    document.getElementById("scoreNow").textContent=exam.currentScore;
+    const cEl=document.getElementById("combo");
+    cEl.textContent="🔥 Combo "+exam.combo;
+    cEl.classList.add("pop"); setTimeout(()=>cEl.classList.remove("pop"),200);
+    cEl.style.color=exam.combo>=3?"var(--wrong)":"var(--gold)";
+    // 下一題
+    exam.idx++; exam._locked=false;
+    setTimeout(()=>renderInfinityQuestion(), 750);
+  }else{
+    // 答錯 → 結算
+    const cEl=document.getElementById("combo"); cEl.style.color="var(--wrong)";
+    setTimeout(()=>handleGameOver(), 600);
+  }
+}
+function handleGameOver(){
+  if(exam.finished) return;
+  exam.finished=true;
+  exam.timeSpent=Math.round((Date.now()-exam.startTs)/1000);
+  // 經驗值（與一般模式一致：每答對 +2 EXP，人物全科可得、座駕限綜合）
+  const prevCharLv=levelOf(save.charExp), prevVehLv=levelOf(save.vehExp);
+  exam.charGain=exam.correct*EXP_PER_CORRECT; save.charExp+=exam.charGain;
+  if(exam.isBig){ exam.vehGain=exam.correct*EXP_PER_CORRECT; save.vehExp+=exam.vehGain; }
+  save.totalCorrect+=exam.correct;
+  if(exam.comboBest>save.comboBest) save.comboBest=exam.comboBest;
+  if(!save.badges.firstWin) save.badges.firstWin=true;
+  if(levelOf(save.vehExp)>=MAX_LV) save.badges.superCar=true;
+  if(exam.comboBest>=10) save.badges.comboMaster=true;
+  if(save.totalCorrect>=100) save.badges.tycoon=true;
+  persistSave();
+
+  const newCharLv=levelOf(save.charExp), newVehLv=levelOf(save.vehExp);
+  document.getElementById("finalScore").textContent=exam.currentScore;
+  let cm="♾️ 無限挑戰結束！連對 "+exam.comboBest+" 題、本次答對 "+exam.correct+" 題。";
+  let lv="學識 +"+exam.charGain+" EXP";
+  if(newCharLv>prevCharLv) lv+="　🎉 學識升級 Lv."+prevCharLv+"→Lv."+newCharLv;
+  if(exam.isBig){ lv+="\n座駕 +"+exam.vehGain+" EXP"; if(newVehLv>prevVehLv) lv+="　🏁 座駕升級 Lv."+prevVehLv+"→Lv."+newVehLv; }
+  document.getElementById("comment").textContent=cm;
+  document.getElementById("lvlupMsg").textContent=lv;
+  document.getElementById("result").classList.add("show");
+  document.getElementById("result").scrollIntoView({behavior:"smooth",block:"center"});
+  renderPlayer();
+
+  // 打包上傳：本次得分 / 本次連對 / 本次答對總題數
+  const uniqueId=(exam.name||"匿名考生")+"#"+(exam.code||"");
+  const vT=vehTierOf(levelOf(save.vehExp));
+  const rec={id:"r"+Date.now()+Math.random().toString(36).slice(2,6),name:exam.name||"匿名考生",
+             code:exam.code||"",codeTail:exam.code?exam.code.slice(-2):"",
+             score:exam.currentScore,timeSpent:exam.timeSpent,charLv:newCharLv,
+             charEmoji:charTierOf(newCharLv).emoji,vehEmoji:vT.emoji,streak:exam.comboBest,ts:Date.now()};
+  exam.lbId=rec.id;
+  leaderboard.push(rec); persistLb();
+  save.lastSubmit=rec; persistSave();
+  exam.submitted=true;
+  submitInfinityScore(uniqueId, exam.currentScore, exam.comboBest, exam.correct, rec);
+}
 document.getElementById("quiz").addEventListener("click",e=>{
   const btn=e.target.closest(".opt");
   if(!btn||exam.finished) return;
+  if(exam.isInfinityMode){ handleInfinityAnswer(btn); return; }
   const qi=+btn.dataset.q, oi=+btn.dataset.o;
   if(exam.locked[qi]) return;
   exam.locked[qi]=true;
@@ -790,14 +925,14 @@ function finishExam(timeUp){
   document.getElementById("result").scrollIntoView({behavior:"smooth",block:"center"});
   const vT=vehTierOf(levelOf(save.vehExp));
   const code=exam.code||"";
-  const rec={id:"r"+Date.now()+Math.random().toString(36).slice(2,6),name:exam.name||"匿名考生",code:code,codeTail:code?code.slice(-2):"",score:score,timeSpent:exam.timeSpent,charLv:newCharLv,charEmoji:charTierOf(newCharLv).emoji,vehEmoji:vT.emoji,streak:save.streak,ts:Date.now()};
+  const rec={id:"r"+Date.now()+Math.random().toString(36).slice(2,6),name:exam.name||"匿名考生",code:code,codeTail:code?code.slice(-2):"",score:score,totalCorrect:exam.correct,timeSpent:exam.timeSpent,charLv:newCharLv,charEmoji:charTierOf(newCharLv).emoji,vehEmoji:vT.emoji,streak:save.streak,ts:Date.now()};
   exam.lbId=rec.id;
   leaderboard.push(rec); persistLb();
   save.lastSubmit=rec; persistSave();
   exam.submitted=true;
   submitScoreToGoogle(rec);
 }
-document.getElementById("submitBtn").addEventListener("click",()=>finishExam(false));
+document.getElementById("submitBtn").addEventListener("click",()=>{ const b=document.getElementById("submitBtn"); if(b.disabled) return; b.disabled=true; finishExam(false); });
 document.getElementById("withdrawBtn").addEventListener("click",()=>{
   if(!exam||!exam.submitted) return;
   save.charExp=Math.max(0,save.charExp-exam.charGain);
@@ -817,6 +952,9 @@ document.getElementById("backLobbyBtn").addEventListener("click",()=>{
   clearInterval(timerId);
   document.getElementById("examView").style.display="none";
   document.getElementById("lobbyView").style.display="block";
+  document.getElementById("timer").style.display="";
+  document.getElementById("submitBtn").style.display="";
+  document.getElementById("submitBtn").disabled=true;
   exam=null; renderDaily(); window.scrollTo({top:0,behavior:"smooth"});
 });
 document.getElementById("resetBtn").addEventListener("click",()=>{
@@ -876,24 +1014,33 @@ function cloudPost(payload){
     body:JSON.stringify(payload)
   });
 }
-function submitScoreToGoogle(rec) {
-  // 這是新版的邏輯：只傳送核心身份與本次成績，由後端負責加總
-  cloudPost({ 
-    uniqueId: rec.name + "#" + rec.code, 
-    name: rec.name,
-    score: rec.score, 
-    duration: rec.timeSpent, 
-    type: "成績"
+function submitScoreToGoogle(rec){
+  cloudPost({
+    type:"成績", name:rec.name, code:rec.code, key:(rec.name+"#"+rec.code), uniqueId:(rec.name+"#"+rec.code),
+    score:rec.score, currentStreak:rec.streak, totalQuestionsCorrect:(rec.totalCorrect||0),
+    timeSpent:rec.timeSpent, lastCheckIn:(save.lastCheckIn||""),
+    charLv:rec.charLv, charEmoji:rec.charEmoji, vehEmoji:rec.vehEmoji, streak:rec.streak,
+    id:rec.id, time:new Date().toISOString()
   })
-  .then(r => r.text())
-  .then(() => { 
-    toast("成績已同步至雲端成長系統！"); 
-    fetchCloudLeaderboard(); 
+  .then(r=>r.text())
+  .then(()=>{ toast("成績已上傳雲端排行！"); fetchCloudLeaderboard(); })
+  .catch(err=>{ console.warn("成績上傳失敗：",err); toast("雲端上傳失敗，已存本機排行"); });
+}
+// 無限挑戰結算上傳：統一打包後端欄位對照表所需資料
+function submitInfinityScore(uniqueId, score, currentStreak, totalQuestionsCorrect, rec){
+  cloudPost({
+    type:"成績",
+    uniqueId:uniqueId, key:uniqueId, name:rec.name, code:rec.code,
+    score:score,                              // C: 本次得分（後端累加）
+    currentStreak:currentStreak,              // E: 本次連對（後端取最高）
+    totalQuestionsCorrect:totalQuestionsCorrect, // G: 本次答對題數（後端累加）
+    lastCheckIn:(save.lastCheckIn||""),       // F: 上次打卡日期
+    charLv:rec.charLv, charEmoji:rec.charEmoji, vehEmoji:rec.vehEmoji, streak:currentStreak,
+    id:rec.id, time:new Date().toISOString()
   })
-  .catch(err => { 
-    console.warn("上傳失敗:", err); 
-    toast("雲端上傳失敗"); 
-  });
+  .then(r=>r.text())
+  .then(()=>{ toast("無限挑戰成績已上傳！"); fetchCloudLeaderboard(); })
+  .catch(err=>{ console.warn("無限成績上傳失敗：",err); toast("雲端上傳失敗，已存本機排行"); });
 }
 function deleteScoreFromGoogle(rec){
   cloudPost({ type:"撤回成績", name:rec.name, code:rec.code, key:(rec.name+"#"+rec.code), score:rec.score, id:rec.id, time:new Date().toISOString() })
