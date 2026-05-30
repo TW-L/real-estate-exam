@@ -876,16 +876,24 @@ function cloudPost(payload){
     body:JSON.stringify(payload)
   });
 }
-function submitScoreToGoogle(rec){
-  cloudPost({
-    type:"成績", name:rec.name, code:rec.code, key:(rec.name+"#"+rec.code),
-    score:rec.score, timeSpent:rec.timeSpent,
-    charLv:rec.charLv, charEmoji:rec.charEmoji, vehEmoji:rec.vehEmoji, streak:rec.streak,
-    id:rec.id, time:new Date().toISOString()
+function submitScoreToGoogle(rec) {
+  // 這是新版的邏輯：只傳送核心身份與本次成績，由後端負責加總
+  cloudPost({ 
+    uniqueId: rec.name + "#" + rec.code, 
+    name: rec.name,
+    score: rec.score, 
+    duration: rec.timeSpent, 
+    type: "成績"
   })
-  .then(r=>r.text())
-  .then(()=>{ toast("成績已上傳雲端排行！"); fetchCloudLeaderboard(); })
-  .catch(err=>{ console.warn("成績上傳失敗：",err); toast("雲端上傳失敗，已存本機排行"); });
+  .then(r => r.text())
+  .then(() => { 
+    toast("成績已同步至雲端成長系統！"); 
+    fetchCloudLeaderboard(); 
+  })
+  .catch(err => { 
+    console.warn("上傳失敗:", err); 
+    toast("雲端上傳失敗"); 
+  });
 }
 function deleteScoreFromGoogle(rec){
   cloudPost({ type:"撤回成績", name:rec.name, code:rec.code, key:(rec.name+"#"+rec.code), score:rec.score, id:rec.id, time:new Date().toISOString() })
