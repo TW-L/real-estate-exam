@@ -136,7 +136,7 @@ input.tf:focus,select.tf:focus,textarea.tf:focus{outline:none;border-color:var(-
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 .veh-name{font-family:var(--fd);font-weight:900;font-size:1.4rem}
 .veh-tier{color:var(--text-soft);font-size:.9rem;margin-top:2px}
-.veh-track{display:flex;justify-content:space-between;margin:20px 0 6px;font-size:1.6rem}
+.veh-track{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;margin:20px 0 6px;font-size:1.5rem}
 .veh-track span{opacity:.3;filter:grayscale(1)}
 .veh-track span.reached{opacity:1;filter:none}
 .motiv{margin-top:14px;background:var(--surface-2);border-radius:12px;padding:14px;font-weight:500;font-size:.95rem}
@@ -144,6 +144,14 @@ input.tf:focus,select.tf:focus,textarea.tf:focus{outline:none;border-color:var(-
 .lb-tab{flex:1;border:none;background:transparent;color:var(--text-soft);font-family:var(--fb);font-weight:700;font-size:.86rem;padding:9px 6px;border-radius:999px;cursor:pointer;transition:all .2s}
 .lb-tab.active{background:var(--surface);color:var(--accent);box-shadow:var(--shadow)}
 .lb-loading{text-align:center;color:var(--text-soft);padding:24px 0;font-size:.88rem}
+.daily-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.streak-pill{font-weight:900;font-size:.92rem;color:var(--accent);background:var(--accent-soft);padding:5px 14px;border-radius:999px;font-family:var(--fd)}
+.daily-bar{height:13px;background:var(--surface-3);border-radius:999px;overflow:hidden}
+.daily-fill{height:100%;border-radius:999px;width:0;background:linear-gradient(90deg,var(--gold),var(--accent));transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.daily-fill.done{background:linear-gradient(90deg,var(--correct),var(--gold))}
+.daily-text{font-size:.85rem;color:var(--text-soft);margin-top:7px;font-weight:700}
+.lb-streak{font-weight:700}
+.lb-tail{font-size:.78rem;color:var(--text-soft);font-weight:700}
 .lb-table{width:100%;border-collapse:collapse;font-size:.9rem}
 .lb-table th,.lb-table td{padding:11px 8px;text-align:left;border-bottom:1px solid var(--border)}
 .lb-table th{font-size:.74rem;color:var(--text-soft);font-weight:700;letter-spacing:.03em}
@@ -174,7 +182,7 @@ footer{text-align:center;color:var(--text-soft);font-size:.78rem;margin-top:36px
   <div class="dual">
     <div class="mini-card">
       <div class="mc-head">
-        <span class="mc-emoji" id="charEmoji">🦺🐣</span>
+        <span class="mc-emoji" id="charEmoji">🐣</span>
         <div>
           <div class="mc-lv" id="charLv">Char Lv.1</div>
           <div class="mc-title" id="charTitle">房產菜鳥小白</div>
@@ -205,11 +213,25 @@ footer{text-align:center;color:var(--text-soft);font-size:.78rem;margin-top:36px
   </div>
   <section class="panel active" id="panel-lobby">
     <div id="lobbyView">
+      <div class="card" id="dailyCard">
+        <div class="daily-head">
+          <h2 style="margin-bottom:0">📅 今日修行進度</h2>
+          <span class="streak-pill" id="streakPill">🔥 0 天</span>
+        </div>
+        <div class="daily-bar"><div class="daily-fill" id="dailyFill"></div></div>
+        <div class="daily-text" id="dailyText">今日已答 0 / 10 題</div>
+        <p class="hint" id="bonusText" style="margin-top:8px">連續打卡可獲得分數加乘，每連 1 天 +5%（上限 +50%）。</p>
+      </div>
       <div class="card">
         <h2>🚀 開始測驗</h2>
         <div class="field">
           <label class="fl">考生姓名</label>
           <input class="tf" id="playerName" type="text" placeholder="請輸入考生姓名" maxlength="20">
+        </div>
+        <div class="field">
+          <label class="fl">個人驗證碼（4 碼數字）</label>
+          <input class="tf" id="playerCode" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="例如 1234" maxlength="4">
+          <p class="hint" style="margin-top:7px">💡 貼心提醒：輸入驗證碼可將您的刷題進度與分數同步至雲端，並作為您的個人帳號憑證。</p>
         </div>
         <div class="field">
           <label class="fl">選擇科目</label>
@@ -284,33 +306,37 @@ footer{text-align:center;color:var(--text-soft);font-size:.78rem;margin-top:36px
   </section>
   <section class="panel" id="panel-garage">
     <div class="card garage">
-      <h2>🏁 我的座駕</h2>
+      <h2>🏁 我的座駕（9 階進化）</h2>
       <div class="veh" id="vehEmoji">🚲</div>
-      <div class="veh-name" id="vehName">基本代步</div>
-      <div class="veh-tier" id="vehTier">雙腳萬能 / 腳踏車</div>
-      <div class="veh-track">
-        <span data-tier="0">🚲</span><span data-tier="1">🛵</span><span data-tier="2">🚗</span><span data-tier="3">🏎️</span>
+      <div class="veh-name" id="vehName">Lv.1　腳踏車</div>
+      <div class="veh-tier" id="vehTier">雙腳萬能</div>
+      <div class="veh-track" id="vehTrack">
+        <span data-tier="0">🚲</span><span data-tier="1">🛵</span><span data-tier="2">🚗</span><span data-tier="3">🏎️</span><span data-tier="4">🚢</span><span data-tier="5">🛳️</span><span data-tier="6">✈️</span><span data-tier="7">🚀</span><span data-tier="8">🛸</span>
       </div>
       <div class="motiv" id="motiv">座駕只能透過「綜合大會考」答對題目升級喔！</div>
     </div>
     <div class="card garage">
-      <h2>🧑‍💼 我的經紀人形象</h2>
-      <div class="veh" id="charBig">🦺🐣</div>
-      <div class="veh-name" id="charBigName">房產菜鳥小白</div>
+      <h2>🧑‍💼 我的經紀人形象（9 階進化）</h2>
+      <div class="veh" id="charBig">🐣</div>
+      <div class="veh-name" id="charBigName">Lv.1　房產菜鳥小白</div>
       <div class="veh-tier" id="charBigTier">身穿實習生背心</div>
+      <div class="veh-track" id="charTrack">
+        <span data-tier="0">🐣</span><span data-tier="1">🧑‍💼</span><span data-tier="2">👔</span><span data-tier="3">🏆</span><span data-tier="4">🕵️‍♂️</span><span data-tier="5">🏗️</span><span data-tier="6">🎩</span><span data-tier="7">🤴</span><span data-tier="8">🌌</span>
+      </div>
       <div class="motiv" id="charMotiv">不論考哪一科，每答對一題都能提升學識等級！</div>
     </div>
   </section>
   <section class="panel" id="panel-leaderboard">
     <div class="card">
       <h2>🏆 風雲排行榜</h2>
+      <p class="hint" style="margin-top:0;margin-bottom:10px">🔐 輸入姓名與驗證碼，即可跨裝置同步您的飛碟進度與總分。</p>
       <div class="lb-switch">
         <button class="lb-tab active" id="lbWorldBtn">🌐 雲端世界排行</button>
         <button class="lb-tab" id="lbLocalBtn">📱 本機個人排行</button>
       </div>
       <p class="hint" id="lbHint" style="margin-top:0">依得分高到低、同分則花費時間短者優先。</p>
       <table class="lb-table">
-        <thead><tr><th>#</th><th>考生</th><th>得分</th><th>用時</th><th>學識</th><th>座駕</th></tr></thead>
+        <thead><tr><th>#</th><th>考生</th><th>得分</th><th>用時</th><th>🔥連勝</th><th>學識</th><th>座駕</th></tr></thead>
         <tbody id="lbBody"></tbody>
       </table>
       <div class="btn-row">
@@ -406,22 +432,34 @@ const BANK = [
    options:["2年","3年","4年","6年"],answer:2,
    law:"不動產經紀業管理條例 §15",explain:"經紀人證書有效期限為4年，期滿前應檢附4年內完成專業訓練30小時以上之證明辦理換證。"}
 ];
+const MAX_LV=9;
+// 9 階配置：索引 0 = Lv.1 ... 索引 8 = Lv.9
 const CHAR_TIERS=[
-  {min:1,max:2,emoji:"🦺🐣",name:"房產菜鳥小白",sub:"身穿實習生背心"},
-  {min:3,max:4,emoji:"👔💼",name:"專業不動產經紀人",sub:"換上俐落西裝"},
-  {min:5,max:7,emoji:"🏢🏆",name:"百萬頂尖超模店長",sub:"手握黃金萬寶龍筆"},
-  {min:8,max:999,emoji:"🧙‍♂️✨",name:"不動產至尊法神",sub:"身披法條魔法袍，發出聖光"}
+  {lv:1,emoji:"🐣",name:"房產菜鳥小白",sub:"身穿實習生背心"},
+  {lv:2,emoji:"🧑‍💼",name:"俐落西裝新人",sub:"換上俐落西裝新人"},
+  {lv:3,emoji:"👔",name:"專業簽約顧問",sub:"專業簽約顧問"},
+  {lv:4,emoji:"🏆",name:"頂尖百萬業務",sub:"頂尖百萬業務"},
+  {lv:5,emoji:"🕵️‍♂️",name:"區域深耕大師",sub:"區域深耕大師"},
+  {lv:6,emoji:"🏗️",name:"地產開發智囊",sub:"地產開發智囊"},
+  {lv:7,emoji:"🎩",name:"國際房產投資大亨",sub:"國際房產投資大亨"},
+  {lv:8,emoji:"🤴",name:"地產帝國操盤手",sub:"地產帝國操盤手"},
+  {lv:9,emoji:"🌌",name:"星際空間仲介之神",sub:"星際空間仲介之神"}
 ];
 const VEHICLES=[
-  {min:1,max:2,emoji:"🚲",name:"基本代步",tier:"雙腳萬能 / 腳踏車",idx:0},
-  {min:3,max:4,emoji:"🛵",name:"業績起飛",tier:"狂飆小綿羊機車",idx:1},
-  {min:5,max:7,emoji:"🚗",name:"頂尖開發",tier:"成交百萬外匯賓士",idx:2},
-  {min:8,max:999,emoji:"🏎️",name:"業界傳奇",tier:"至尊土豪金勞斯萊斯",idx:3}
+  {lv:1,emoji:"🚲",name:"腳踏車",tier:"雙腳萬能"},
+  {lv:2,emoji:"🛵",name:"機車",tier:"城市通勤"},
+  {lv:3,emoji:"🚗",name:"汽車",tier:"四輪代步"},
+  {lv:4,emoji:"🏎️",name:"超跑",tier:"極速狂飆"},
+  {lv:5,emoji:"🚢",name:"船",tier:"海上霸主"},
+  {lv:6,emoji:"🛳️",name:"郵輪",tier:"奢華舒適"},
+  {lv:7,emoji:"✈️",name:"飛機",tier:"跨國商務"},
+  {lv:8,emoji:"🚀",name:"太空船",tier:"宇宙穿梭"},
+  {lv:9,emoji:"🛸",name:"飛碟",tier:"維度超越"}
 ];
 const BADGES=[
   {id:"firstWin",ic:"🎖️",nm:"初出茅廬",ds:"完成第一次測驗"},
   {id:"perfect",ic:"🎓",nm:"法學學霸",ds:"任意測驗100分"},
-  {id:"superCar",ic:"🏎️",nm:"超跑車主",ds:"座駕進化到最高階"},
+  {id:"superCar",ic:"🛸",nm:"飛碟車主",ds:"座駕進化到最高階"},
   {id:"comboMaster",ic:"🔥",nm:"連擊大師",ds:"單次Combo達10以上"},
   {id:"allRounder",ic:"🌍",nm:"全能經紀",ds:"完成5次綜合大會考"},
   {id:"tycoon",ic:"💰",nm:"簽約大亨",ds:"累計答對100題以上"}
@@ -435,50 +473,115 @@ let cloudState="idle";       // idle | loading | ok | error
 let memSave=null, memLb=null;
 function readLS(k,memRef){ try{const r=localStorage.getItem(k);return r?JSON.parse(r):null;}catch(e){return memRef;} }
 function writeLS(k,obj,setMem){ try{localStorage.setItem(k,JSON.stringify(obj));}catch(e){setMem(JSON.parse(JSON.stringify(obj)));} }
-function defaultSave(){return{name:"",charExp:0,vehExp:0,badges:{},totalCorrect:0,comboBest:0,bigExamCount:0,lastSubmit:null};}
+function defaultSave(){return{name:"",code:"",charExp:0,vehExp:0,badges:{},totalCorrect:0,comboBest:0,bigExamCount:0,lastSubmit:null,streak:0,lastCheckIn:"",todayDate:"",todayAnswered:0,todayCorrect:0,checkedToday:false};}
 let save=Object.assign(defaultSave(), readLS(KEY,memSave)||{});
 let leaderboard=readLS(LB_KEY,memLb)||[];
 function persistSave(){ writeLS(KEY,save,v=>memSave=v); }
 function persistLb(){ writeLS(LB_KEY,leaderboard,v=>memLb=v); }
-const levelOf=exp=>Math.floor(exp/EXP_PER_LV)+1;
-const charTierOf=lv=>CHAR_TIERS.find(t=>lv>=t.min&&lv<=t.max)||CHAR_TIERS[CHAR_TIERS.length-1];
-const vehTierOf=lv=>VEHICLES.find(v=>lv>=v.min&&lv<=v.max)||VEHICLES[VEHICLES.length-1];
+const levelOf=exp=>Math.min(MAX_LV, Math.floor(exp/EXP_PER_LV)+1);
+const charTierOf=lv=>CHAR_TIERS[Math.min(Math.max(lv,1),MAX_LV)-1];
+const vehTierOf=lv=>VEHICLES[Math.min(Math.max(lv,1),MAX_LV)-1];
+
+/* ===== 每日打卡 × 雙軌加乘系統 ===== */
+const DAILY_GOAL=10;            // 每日達標題數
+const STREAK_PER_DAY=0.05;     // 連勝：每連 1 天 +5%
+const STREAK_CAP=0.50;         // 連勝上限 +50%
+const BURST_PER_BLOCK=0.10;    // 單日爆發：每滿 10 題「答對」+10%
+function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function dayDiff(a,b){ if(!a) return Infinity; return Math.round((new Date(b)-new Date(a))/86400000); }
+// 跨日重置今日計數
+function rollDaily(){
+  const t=todayStr();
+  if(save.todayDate!==t){
+    save.todayDate=t; save.todayAnswered=0; save.todayCorrect=0; save.checkedToday=false;
+    if(save.lastCheckIn && dayDiff(save.lastCheckIn,t)>1) save.streak=0;
+    persistSave();
+  }
+}
+// 連勝加乘係數（含倍率），例：streak 6 → 0.30
+function streakBonus(){ return Math.min(save.streak*STREAK_PER_DAY, STREAK_CAP); }
+// 單日爆發加乘係數：今日答對每滿 10 題 +10%
+function burstBonus(){ return Math.floor((save.todayCorrect||0)/DAILY_GOAL)*BURST_PER_BLOCK; }
+// 系統自動取兩者最高，回傳 {bonus, mult, type}
+function bestBonus(){
+  const s=streakBonus(), b=burstBonus();
+  const bonus=Math.max(s,b);
+  let type = bonus<=0 ? "無" : (b>s ? "單日爆發" : (s>b ? "連勝" : "連勝"));
+  return {bonus, mult:1+bonus, type, streak:s, burst:b};
+}
+// 累計今日答題（answered 全部、correctN 其中答對數）；回傳是否「剛打卡」
+function addDailyAnswers(answeredN, correctN){
+  rollDaily();
+  save.todayAnswered+=answeredN;
+  save.todayCorrect=(save.todayCorrect||0)+(correctN||0);
+  let justChecked=false;
+  if(!save.checkedToday && save.todayAnswered>=DAILY_GOAL){
+    const t=todayStr();
+    if(save.lastCheckIn && dayDiff(save.lastCheckIn,t)===1) save.streak+=1;
+    else if(save.lastCheckIn===t){/* 同日重複不變 */}
+    else save.streak=1;
+    save.lastCheckIn=t; save.checkedToday=true; justChecked=true;
+  }
+  persistSave();
+  return justChecked;
+}
+function renderDaily(){
+  rollDaily();
+  const done=Math.min(save.todayAnswered,DAILY_GOAL);
+  const pct=Math.min(save.todayAnswered/DAILY_GOAL*100,100);
+  const fill=document.getElementById("dailyFill");
+  fill.style.width=pct+"%";
+  fill.classList.toggle("done", save.checkedToday);
+  document.getElementById("dailyText").textContent = save.checkedToday
+    ? "✅ 今日已打卡！（已答 "+save.todayAnswered+" 題）"
+    : "今日已答 "+done+" / "+DAILY_GOAL+" 題";
+  document.getElementById("streakPill").textContent="🔥 "+save.streak+" 天";
+  const bb=bestBonus();
+  const bonusPct=Math.round(bb.bonus*100);
+  const sPct=Math.round(bb.streak*100), brPct=Math.round(bb.burst*100);
+  document.getElementById("bonusText").textContent = bonusPct>0
+    ? "⚡ 系統已自動應用最高加乘係數（目前啟用"+bb.type+"加乘 "+bb.mult.toFixed(2)+"x，+"+bonusPct+"%）　｜　連勝 +"+sPct+"% · 單日爆發 +"+brPct+"%"
+    : "連勝（每連 1 天 +5%，上限 +50%）與單日爆發（每答對 10 題 +10%）擇高自動套用。";
+}
 function renderPlayer(){
   const cLv=levelOf(save.charExp), cT=charTierOf(cLv);
   document.getElementById("charEmoji").textContent=cT.emoji;
-  document.getElementById("charEmoji").classList.toggle("glow", cLv>=8);
+  document.getElementById("charEmoji").classList.toggle("glow", cLv>=MAX_LV);
   document.getElementById("charLv").textContent="Char Lv."+cLv;
   document.getElementById("charTitle").textContent=cT.name;
   document.getElementById("charSub").textContent=cT.sub;
-  const cInto=save.charExp%EXP_PER_LV;
+  const cInto=cLv>=MAX_LV?EXP_PER_LV:(save.charExp%EXP_PER_LV);
   document.getElementById("charFill").style.width=(cInto/EXP_PER_LV*100)+"%";
-  document.getElementById("charExp").textContent="學識 EXP "+cInto+" / "+EXP_PER_LV+"（總 "+save.charExp+"）";
+  document.getElementById("charExp").textContent="學識 EXP "+(save.charExp%EXP_PER_LV)+" / "+EXP_PER_LV+"（總 "+save.charExp+"）";
   document.getElementById("charBig").textContent=cT.emoji;
-  document.getElementById("charBig").classList.toggle("glow", cLv>=8);
-  document.getElementById("charBigName").textContent=cT.name;
+  document.getElementById("charBig").classList.toggle("glow", cLv>=MAX_LV);
+  document.getElementById("charBigName").textContent="Lv."+cLv+"　"+cT.name;
   document.getElementById("charBigTier").textContent=cT.sub;
   const vLv=levelOf(save.vehExp), vT=vehTierOf(vLv);
   document.getElementById("vehEmojiMini").textContent=vT.emoji;
   document.getElementById("vehLvMini").textContent="座駕 Lv."+vLv;
   document.getElementById("vehTitleMini").textContent=vT.name;
-  const vInto=save.vehExp%EXP_PER_LV;
+  const vInto=vLv>=MAX_LV?EXP_PER_LV:(save.vehExp%EXP_PER_LV);
   document.getElementById("vehFill").style.width=(vInto/EXP_PER_LV*100)+"%";
-  document.getElementById("vehExp").textContent="座駕 EXP "+vInto+" / "+EXP_PER_LV+"（總 "+save.vehExp+"）";
+  document.getElementById("vehExp").textContent="座駕 EXP "+(save.vehExp%EXP_PER_LV)+" / "+EXP_PER_LV+"（總 "+save.vehExp+"）";
   document.getElementById("vehEmoji").textContent=vT.emoji;
-  document.getElementById("vehName").textContent=vT.name;
+  document.getElementById("vehName").textContent="Lv."+vLv+"　"+vT.name;
   document.getElementById("vehTier").textContent=vT.tier;
-  document.querySelectorAll(".veh-track span").forEach(s=>s.classList.toggle("reached",+s.dataset.tier<=vT.idx));
-  const nextV=VEHICLES.find(x=>x.min>vT.max);
+  document.querySelectorAll("#vehTrack span").forEach(s=>s.classList.toggle("reached",(+s.dataset.tier)+1<=vLv));
+  document.querySelectorAll("#charTrack span").forEach(s=>s.classList.toggle("reached",(+s.dataset.tier)+1<=cLv));
   const motiv=document.getElementById("motiv");
-  if(!nextV) motiv.textContent="🏆 座駕已達頂級！綜合大會考的霸主！";
-  else{ const need=(nextV.min-1)*EXP_PER_LV - save.vehExp;
-    motiv.textContent="再累積 "+need+" 座駕 EXP（綜合大會考約答對 "+Math.ceil(need/EXP_PER_CORRECT)+" 題）即可升級為「"+nextV.name+"」"+nextV.emoji+"！"; }
-  const nextC=CHAR_TIERS.find(x=>x.min>cT.max);
-  document.getElementById("charMotiv").textContent = nextC
-    ? "再累積 "+((nextC.min-1)*EXP_PER_LV-save.charExp)+" 學識 EXP 即可進化為「"+nextC.name+"」"+nextC.emoji+"！"
-    : "🧙‍♂️ 你已是不動產至尊法神，學識圓滿！";
+  if(vLv>=MAX_LV) motiv.textContent="🛸 座駕已達頂級「飛碟」，維度超越！";
+  else{ const need=vLv*EXP_PER_LV - save.vehExp;
+    const nextV=vehTierOf(vLv+1);
+    motiv.textContent="距離下一階「"+nextV.name+"」"+nextV.emoji+"（"+nextV.tier+"）還差 "+need+" 座駕 EXP（綜合大會考約答對 "+Math.ceil(need/EXP_PER_CORRECT)+" 題）。"; }
+  if(cLv>=MAX_LV) document.getElementById("charMotiv").textContent="🌌 你已是星際空間仲介之神，學識圓滿！";
+  else{ const needC=cLv*EXP_PER_LV - save.charExp;
+    const nextC=charTierOf(cLv+1);
+    document.getElementById("charMotiv").textContent="距離下一階「"+nextC.name+"」"+nextC.emoji+" 還差 "+needC+" 學識 EXP（約答對 "+Math.ceil(needC/EXP_PER_CORRECT)+" 題）。"; }
   const pn=document.getElementById("playerName");
   if(pn && !pn.value) pn.value=save.name||"";
+  const pc=document.getElementById("playerCode");
+  if(pc && !pc.value) pc.value=save.code||"";
   renderBadges();
 }
 function renderBadges(){
@@ -494,7 +597,10 @@ function lbRowsHtml(list){
     const ts=Number(r.timeSpent)||0;
     const mm=String(Math.floor(ts/60)).padStart(2,"0")+":"+String(ts%60).padStart(2,"0");
     const cEmo=r.charEmoji||charTierOf(Number(r.charLv)||1).emoji;
-    return '<tr><td class="lb-rank '+cls+'">'+rk+'</td><td>'+escapeHtml(r.name)+'</td><td class="lb-score">'+r.score+'</td><td>'+mm+'</td><td><span class="lb-veh">'+cEmo+'</span> Lv.'+(r.charLv||1)+'</td><td class="lb-veh">'+(r.vehEmoji||"🚲")+'</td></tr>';
+    const stk=Number(r.streak)||0;
+    const tail=r.codeTail||(r.code?String(r.code).slice(-2):"");
+    const nameCell=escapeHtml(r.name)+(tail?' <span class="lb-tail">[**'+escapeHtml(tail)+']</span>':"");
+    return '<tr><td class="lb-rank '+cls+'">'+rk+'</td><td>'+nameCell+'</td><td class="lb-score">'+r.score+'</td><td>'+mm+'</td><td class="lb-streak">🔥 '+stk+'</td><td><span class="lb-veh">'+cEmo+'</span> Lv.'+(r.charLv||1)+'</td><td class="lb-veh">'+(r.vehEmoji||"🚲")+'</td></tr>';
   }).join("");
 }
 function renderLeaderboard(){
@@ -503,15 +609,15 @@ function renderLeaderboard(){
   if(lbView==="local"){
     hint.textContent="本機個人紀錄，依得分高到低、同分則用時短者優先。";
     body.innerHTML = leaderboard.length ? lbRowsHtml(leaderboard)
-      : '<tr><td colspan="6" class="lb-empty">尚無本機紀錄，快去測驗刷榜！</td></tr>';
+      : '<tr><td colspan="7" class="lb-empty">尚無本機紀錄，快去測驗刷榜！</td></tr>';
     return;
   }
   // 雲端世界排行
   hint.textContent="全球考生即時排行，依得分高到低、同分則用時短者優先。";
-  if(cloudState==="loading"){ body.innerHTML='<tr><td colspan="6" class="lb-loading">⏳ 載入雲端排行中…</td></tr>'; return; }
-  if(cloudState==="error"){ body.innerHTML='<tr><td colspan="6" class="lb-empty">⚠️ 雲端連線失敗，請按「重新整理雲端」再試。</td></tr>'; return; }
+  if(cloudState==="loading"){ body.innerHTML='<tr><td colspan="7" class="lb-loading">⏳ 載入雲端排行中…</td></tr>'; return; }
+  if(cloudState==="error"){ body.innerHTML='<tr><td colspan="7" class="lb-empty">⚠️ 雲端連線失敗，請按「重新整理雲端」再試。</td></tr>'; return; }
   body.innerHTML = cloudBoard.length ? lbRowsHtml(cloudBoard)
-    : '<tr><td colspan="6" class="lb-empty">雲端尚無紀錄，成為第一名吧！</td></tr>';
+    : '<tr><td colspan="7" class="lb-empty">雲端尚無紀錄，成為第一名吧！</td></tr>';
 }
 function fetchCloudLeaderboard(){
   cloudState="loading"; if(lbView==="world") renderLeaderboard();
@@ -521,14 +627,19 @@ function fetchCloudLeaderboard(){
       // 容錯：後端可能回傳陣列，或 {leaderboard:[...]} / {data:[...]} / {records:[...]}
       let list = Array.isArray(data) ? data
                : (data && (data.leaderboard||data.data||data.records||data.result)) || [];
-      cloudBoard = (list||[]).map(r=>({
+      cloudBoard = (list||[]).map(r=>{
+        const code=(r.code!=null?String(r.code):(r.驗證碼!=null?String(r.驗證碼):""));
+        return {
         name:r.name||r.姓名||"匿名考生",
+        code:code,
+        codeTail:r.codeTail||(code?code.slice(-2):""),
         score:Number(r.score!=null?r.score:r.得分)||0,
         timeSpent:Number(r.timeSpent!=null?r.timeSpent:(r.用時||r.time||0))||0,
         charLv:Number(r.charLv!=null?r.charLv:(r.等級||r.lv||1))||1,
         charEmoji:r.charEmoji||r.人物||"",
+        streak:Number(r.streak!=null?r.streak:(r.連勝||r.連續打卡||0))||0,
         vehEmoji:r.vehEmoji||r.座駕||"🚲"
-      }));
+      };});
       cloudState="ok"; if(lbView==="world") renderLeaderboard();
     })
     .catch(err=>{ console.warn("雲端排行讀取失敗：",err); cloudState="error"; if(lbView==="world") renderLeaderboard(); });
@@ -559,14 +670,17 @@ function pickQuestions(sub,src,count){
 }
 document.getElementById("startBtn").addEventListener("click",()=>{
   const name=document.getElementById("playerName").value.trim();
-  save.name=name; persistSave();
+  const codeRaw=document.getElementById("playerCode").value.trim();
+  if(codeRaw && !/^\d{4}$/.test(codeRaw)){ toast("驗證碼需為 4 碼數字"); return; }
+  const code=codeRaw;
+  save.name=name; save.code=code; persistSave();
   const sub=document.getElementById("subjectSel").value;
   const src=document.querySelector('input[name="src"]:checked').value;
   const count=+document.getElementById("countSel").value;
   const minutes=+document.getElementById("timeSel").value;
   const qs=pickQuestions(sub,src,count);
   if(qs.length===0){ toast("此分類暫無題目"); return; }
-  exam={qs,name,sub,src,minutes,isBig:sub==="綜合",answered:0,correct:0,combo:0,comboBest:0,score:0,
+  exam={qs,name,code,sub,src,minutes,isBig:sub==="綜合",answered:0,correct:0,combo:0,comboBest:0,score:0,
         locked:Array(qs.length).fill(false),finished:false,submitted:false,
         charGain:0,vehGain:0,startTs:Date.now(),timeSpent:0,lbId:null};
   document.getElementById("lobbyView").style.display="none";
@@ -605,6 +719,9 @@ document.getElementById("quiz").addEventListener("click",e=>{
   const isRight=oi===correctIdx;
   if(!isRight) btn.classList.add("wrong");
   exam.answered++;
+  const justChecked=addDailyAnswers(1, isRight?1:0);
+  renderDaily();
+  if(justChecked) toast("🔥 今日打卡成功！連勝 "+save.streak+" 天");
   if(isRight){ exam.correct++; exam.combo++; if(exam.combo>exam.comboBest) exam.comboBest=exam.combo;
     exam.score=Math.round(exam.correct/exam.qs.length*100); } else exam.combo=0;
   document.getElementById("scoreNow").textContent=exam.score;
@@ -634,10 +751,15 @@ function finishExam(timeUp){
   if(exam.finished) return;
   exam.finished=true; clearInterval(timerId);
   exam.timeSpent=Math.min(exam.minutes*60, Math.round((Date.now()-exam.startTs)/1000));
-  const score=Math.round(exam.correct/exam.qs.length*100);
-  exam.score=score;
+  const baseScore=Math.round(exam.correct/exam.qs.length*100);
+  const bb=bestBonus();
+  const mult=bb.mult;
+  const bonusPct=Math.round(bb.bonus*100);
+  const score=Math.min(Math.round(baseScore*mult),100);  // 加乘後得分（上限100）
+  exam.baseScore=baseScore; exam.score=score;
   document.getElementById("finalScore").textContent=score;
   let cm=score===100?"🏆 滿分！可以進考場了！":score>=80?"👍 很穩，把錯題條號補起來。":score>=60?"📚 及格邊緣，多複習條文。":"💪 別灰心，重點條文再讀一遍！";
+  if(bonusPct>0) cm="原始 "+baseScore+" 分 × "+bb.type+"加乘 "+mult.toFixed(2)+"x（+"+bonusPct+"%）= "+score+" 分　"+cm;
   if(timeUp) cm="⏰ 時間到！"+cm;
   document.getElementById("comment").textContent=cm;
   const prevCharLv=levelOf(save.charExp), prevVehLv=levelOf(save.vehExp);
@@ -648,8 +770,8 @@ function finishExam(timeUp){
   if(exam.comboBest>save.comboBest) save.comboBest=exam.comboBest;
   if(exam.isBig) save.bigExamCount++;
   if(!save.badges.firstWin) save.badges.firstWin=true;
-  if(score===100) save.badges.perfect=true;
-  if(levelOf(save.vehExp)>=8) save.badges.superCar=true;
+  if(baseScore===100) save.badges.perfect=true;
+  if(levelOf(save.vehExp)>=MAX_LV) save.badges.superCar=true;
   if(exam.comboBest>=10) save.badges.comboMaster=true;
   if(save.bigExamCount>=5) save.badges.allRounder=true;
   if(save.totalCorrect>=100) save.badges.tycoon=true;
@@ -667,7 +789,8 @@ function finishExam(timeUp){
   renderPlayer();
   document.getElementById("result").scrollIntoView({behavior:"smooth",block:"center"});
   const vT=vehTierOf(levelOf(save.vehExp));
-  const rec={id:"r"+Date.now()+Math.random().toString(36).slice(2,6),name:exam.name||"匿名考生",score:score,timeSpent:exam.timeSpent,charLv:newCharLv,charEmoji:charTierOf(newCharLv).emoji,vehEmoji:vT.emoji,ts:Date.now()};
+  const code=exam.code||"";
+  const rec={id:"r"+Date.now()+Math.random().toString(36).slice(2,6),name:exam.name||"匿名考生",code:code,codeTail:code?code.slice(-2):"",score:score,timeSpent:exam.timeSpent,charLv:newCharLv,charEmoji:charTierOf(newCharLv).emoji,vehEmoji:vT.emoji,streak:save.streak,ts:Date.now()};
   exam.lbId=rec.id;
   leaderboard.push(rec); persistLb();
   save.lastSubmit=rec; persistSave();
@@ -694,14 +817,15 @@ document.getElementById("backLobbyBtn").addEventListener("click",()=>{
   clearInterval(timerId);
   document.getElementById("examView").style.display="none";
   document.getElementById("lobbyView").style.display="block";
-  exam=null; window.scrollTo({top:0,behavior:"smooth"});
+  exam=null; renderDaily(); window.scrollTo({top:0,behavior:"smooth"});
 });
 document.getElementById("resetBtn").addEventListener("click",()=>{
   if(!confirm("確定重置？姓名、雙等級、經驗、徽章、座駕與排行榜都會清空，無法復原。")) return;
   try{ localStorage.removeItem(KEY); localStorage.removeItem(LB_KEY); }catch(e){}
   memSave=null; memLb=null; save=defaultSave(); leaderboard=[];
   document.getElementById("playerName").value="";
-  renderPlayer(); renderLeaderboard();
+  document.getElementById("playerCode").value="";
+  renderPlayer(); renderDaily(); renderLeaderboard();
   toast("已重置，可以洗白重新練功！");
 });
 document.getElementById("lbWorldBtn").addEventListener("click",()=>{
@@ -735,6 +859,15 @@ document.getElementById("fbSubmit").addEventListener("click",()=>{
    雲端串接：POST 到 Google Apps Script
    以 text/plain 送出避免 CORS preflight（Apps Script 常見作法），
    後端用 e.postData.contents 解析 JSON 即可。
+   【唯一識別主鍵】每筆成績都帶 name、code 與 key（=name+"#"+code）。
+     後端請以 key（姓名+驗證碼）作為主鍵『累加』同一玩家的總分；
+     不同 code 視為不同帳號，藉此區分同名玩家並支援跨裝置同步。
+   【資料安全】前端僅做三件事：
+     1) type="成績"：新增一筆（建議後端依 key upsert 累加總分），不覆寫他人歷史列。
+     2) type="撤回成績"：僅帶『本次測驗剛產生的 id』與 key，後端如需處理請
+        只比對該 id 移除/標記該筆，切勿用姓名或分數批次刪除歷史紀錄。
+     3) type="意見回饋"：新增一筆。
+   GET 僅讀取排行榜，不送任何刪除/清空指令。
    ============================================================ */
 function cloudPost(payload){
   return fetch(CLOUD_URL,{
@@ -745,15 +878,17 @@ function cloudPost(payload){
 }
 function submitScoreToGoogle(rec){
   cloudPost({
-    type:"成績", name:rec.name, score:rec.score, timeSpent:rec.timeSpent,
-    charLv:rec.charLv, charEmoji:rec.charEmoji, vehEmoji:rec.vehEmoji, id:rec.id, time:new Date().toISOString()
+    type:"成績", name:rec.name, code:rec.code, key:(rec.name+"#"+rec.code),
+    score:rec.score, timeSpent:rec.timeSpent,
+    charLv:rec.charLv, charEmoji:rec.charEmoji, vehEmoji:rec.vehEmoji, streak:rec.streak,
+    id:rec.id, time:new Date().toISOString()
   })
   .then(r=>r.text())
   .then(()=>{ toast("成績已上傳雲端排行！"); fetchCloudLeaderboard(); })
   .catch(err=>{ console.warn("成績上傳失敗：",err); toast("雲端上傳失敗，已存本機排行"); });
 }
 function deleteScoreFromGoogle(rec){
-  cloudPost({ type:"撤回成績", name:rec.name, score:rec.score, id:rec.id, time:new Date().toISOString() })
+  cloudPost({ type:"撤回成績", name:rec.name, code:rec.code, key:(rec.name+"#"+rec.code), score:rec.score, id:rec.id, time:new Date().toISOString() })
   .then(r=>r.text())
   .then(()=>{ fetchCloudLeaderboard(); })
   .catch(err=>console.warn("撤回上傳失敗：",err));
@@ -777,7 +912,7 @@ tg.addEventListener("click",()=>{
   const n=root.getAttribute("data-theme")==="dark"?"light":"dark";
   root.setAttribute("data-theme",n); tg.textContent=n==="dark"?"☀️":"🌙";
 });
-renderPlayer(); renderLeaderboard(); fetchCloudLeaderboard();
+renderPlayer(); renderDaily(); renderLeaderboard(); fetchCloudLeaderboard();
 </script>
 </body>
 </html>
