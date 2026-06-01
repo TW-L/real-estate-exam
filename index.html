@@ -243,6 +243,12 @@ footer{text-align:center;color:var(--text-soft);font-size:.78rem;margin-top:36px
             <option value="綜合">綜合大會考（全科目隨機）</option>
           </select>
         </div>
+        <div class="field">
+          <label class="fl">選擇年度</label>
+          <select class="tf" id="yearSel">
+            <option value="ALL">全部年度</option>
+          </select>
+        </div>
         <div class="grid2">
           <div class="field" style="margin-bottom:0">
             <label class="fl">題目數量</label>
@@ -271,15 +277,8 @@ footer{text-align:center;color:var(--text-soft);font-size:.78rem;margin-top:36px
             <label class="radio-chip"><input type="radio" name="mode" value="infinity">♾️ 無限挑戰（答錯即結束）</label>
           </div>
         </div>
-        <div class="field" style="margin-top:16px">
-          <label class="fl">題目來源</label>
-          <div class="radio-row" id="sourceRow">
-            <label class="radio-chip sel"><input type="radio" name="src" value="歷屆" checked>歷屆考古題精選</label>
-            <label class="radio-chip"><input type="radio" name="src" value="AI">AI 特製模擬預測題</label>
-          </div>
-        </div>
-        <button class="btn btn-full" id="startBtn">🚀 開始測驗</button>
-        <p class="hint" id="modeHint">無限挑戰：不限時、無題數上限，答對持續累積連對與分數，一旦答錯立即結算上傳。</p>
+        <button class="btn btn-full" id="startBtn" disabled>📥 題庫載入中…</button>
+        <p class="hint" id="modeHint">題庫由雲端試算表載入；無限挑戰不限時、答錯即結算上傳。</p>
       </div>
       <div class="card">
         <h2>🏅 成就徽章牆</h2>
@@ -341,9 +340,9 @@ footer{text-align:center;color:var(--text-soft);font-size:.78rem;margin-top:36px
         <button class="lb-tab active" id="lbWorldBtn">🌐 雲端世界排行</button>
         <button class="lb-tab" id="lbLocalBtn">📱 本機個人排行</button>
       </div>
-      <p class="hint" id="lbHint" style="margin-top:0">依得分高到低、同分則花費時間短者優先。</p>
+      <p class="hint" id="lbHint" style="margin-top:0">依累計總分由高到低排序。</p>
       <table class="lb-table">
-        <thead><tr><th>#</th><th>考生</th><th>得分</th><th>用時</th><th>🔥連勝</th><th>學識</th><th>座駕</th></tr></thead>
+        <thead><tr><th>#</th><th>考生</th><th>累計總分</th><th>🔥連勝</th><th>學識</th><th>座駕</th></tr></thead>
         <tbody id="lbBody"></tbody>
       </table>
       <div class="btn-row">
@@ -377,68 +376,9 @@ footer{text-align:center;color:var(--text-soft);font-size:.78rem;margin-top:36px
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const BANK = [
-  {sub:"民法",src:"歷屆",year:"114",q:"依民法死亡宣告之規定，下列何者錯誤？",
-   options:["與失蹤人共有不動產之共有人得聲請對其為死亡宣告","失蹤人滿80歲者，須失蹤滿3年始得聲請死亡宣告","失蹤人受死亡宣告後生存歸來，得聲請『地檢署』撤銷死亡宣告","受死亡宣告者實際生存時，權利能力不因宣告而喪失"],answer:2,
-   law:"民法 §8、§9（死亡宣告）",explain:"撤銷死亡宣告應向『法院』聲請，而非地檢署，故C錯誤。死亡宣告僅生財產與身分上推定效果，本人實際生存時權利能力不喪失。"},
-  {sub:"民法",src:"歷屆",year:"114",q:"關於受監護宣告與輔助宣告，下列何者錯誤？",
-   options:["受監護宣告之成年人，無行為能力","因精神障礙致辨識效果能力顯有不足者，得為監護宣告","受監護宣告之成年人，仍保有完全之權利能力","受輔助宣告人逕締汽車買賣，不因欠缺輔助人同意而無效"],answer:1,
-   law:"民法 §14、§15、§15-2",explain:"『辨識能力顯有不足』屬輔助宣告要件；監護宣告須達『不能辨識』程度，故B敘述錯誤。權利能力人人皆有，不因監護而喪失。"},
-  {sub:"民法",src:"歷屆",year:"113",q:"甲於自有土地建屋，土地房屋遭分別拍賣，丙拍得土地、丁拍得房屋。下列何者正確？",
-   options:["丙可請求丁拆屋還地","丁必須承租丙之土地","視為丁於土地上有地上權","推定丙與丁間有使用借貸契約"],answer:2,
-   law:"民法 §838-1（法定地上權）",explain:"土地及其土地上之房屋同屬一人，因強制拍賣分歸不同人時，視為已有地上權設定，以兼顧房屋利用，故C正確。"},
-  {sub:"民法",src:"歷屆",year:"113",q:"甲乙丙丁共有A地，甲訴請分割共有物獲勝訴確定。下列何者正確？",
-   options:["判決確定時各自取得分得部分所有權","須請求辦理登記始取得分得部分所有權","分割判決為確認判決","分割判決為給付判決"],answer:0,
-   law:"民法 §824-1、§759",explain:"裁判分割共有物之判決為形成判決，於判決確定時即發生物權變動，各共有人取得分得部分所有權，登記僅為處分要件，故A正確。"},
-  {sub:"民法",src:"歷屆",year:"113",q:"甲以A地為乙設定普通抵押權，並約定屆期未清償則A地所有權移屬於乙。此流押約定效力為何？",
-   options:["絕對無效","相對無效","非經登記不生效力","非經登記不得對抗第三人"],answer:1,
-   law:"民法 §873-1（流抵契約）",explain:"現行法已改採『相對無效』：流抵約定非當然無效，但抵押權人請求移轉所有權時，需清算擔保物價值，超過部分應返還，不足部分仍得請求。"},
-  {sub:"民法",src:"AI",q:"夫妻未以契約訂立財產制者，依民法應以何者為其夫妻財產制？",
-   options:["共同財產制","分別財產制","法定財產制","統一財產制"],answer:2,
-   law:"民法 §1005",explain:"夫妻未以契約訂立夫妻財產制者，除本法另有規定外，以『法定財產制』為其夫妻財產制。"},
-  {sub:"民法",src:"AI",q:"關於遺產繼承，下列敘述何者正確？",
-   options:["繼承人自被繼承人死亡時起，原則上『概括承受』其財產上一切權利義務","拋棄繼承得以口頭向其他繼承人為之","遺產分割前各繼承人對遺產為單獨所有","特留分得由被繼承人以遺囑完全剝奪"],answer:0,
-   law:"民法 §1147、§1148、§1174",explain:"繼承因死亡而開始，繼承人原則上概括承受被繼承人財產上一切權利義務（A正確）。拋棄繼承須於知悉時起3個月內以書面向法院為之；分割前為公同共有；特留分不得任意剝奪。"},
-  {sub:"估價",src:"歷屆",year:"114",q:"鄰近國小的店舖做販賣文具圖書使用，是掌握何種估價原則？",
-   options:["外部性原則","貢獻原則","適合原則","內部性原則"],answer:2,
-   law:"不動產估價技術規則（價格形成原則）",explain:"使用型態與周邊環境（學區）相互配合而發揮最大效用，屬『適合原則』。"},
-  {sub:"估價",src:"歷屆",year:"114",q:"勘估標的未來1年客觀淨收益100萬元，收益價格2,000萬元，則收益資本化率為？",
-   options:["3%","5%","8%","10%"],answer:1,
-   law:"收益法 直接資本化（收益價格=淨收益÷資本化率）",explain:"資本化率 = 淨收益 ÷ 收益價格 = 100 ÷ 2000 = 5%，故選B。"},
-  {sub:"估價",src:"歷屆",year:"114",q:"建物重建成本2,000萬、殘價率10%、經濟耐用50年、屋齡10年，以等速折舊計算累積折舊額為多少？",
-   options:["400萬","40萬","360萬","36萬"],answer:2,
-   law:"成本法 等速（直線）折舊",explain:"可折舊額=2000×(1-10%)=1800萬；年折舊=1800÷50=36萬；累積折舊=36×10=360萬，選C。"},
-  {sub:"估價",src:"AI",q:"不動產估價三大方法不包括下列何者？",
-   options:["比較法","收益法","成本法","抽籤法"],answer:3,
-   law:"不動產估價技術規則 §11",explain:"估價方法依規則分為比較法、收益法、成本法三大類（另有土地開發分析等），並無『抽籤法』。"},
-  {sub:"土地法",src:"歷屆",year:"114",q:"依土地稅法規定，一般地價稅的基本稅率為多少？",
-   options:["百分之十","百分之五","千分之十","千分之十五"],answer:2,
-   law:"土地稅法 §16（基本稅率10‰）",explain:"地價稅基本稅率為千分之十，超過累進起點地價部分再按級距累進，故選C。"},
-  {sub:"土地法",src:"歷屆",year:"114",q:"土地所有權移轉時，原則上權義雙方應於訂約幾日內申報土地移轉現值？",
-   options:["15日","30日","45日","60日"],answer:1,
-   law:"土地稅法 §49",explain:"土地所有權移轉，權利人及義務人應於訂定契約之日起30日內，檢附契約影本等文件共同申報移轉現值。"},
-  {sub:"土地法",src:"歷屆",year:"114",q:"區段徵收地區如曾實施農地重劃，抵價地總面積比例不得少於徵收總面積多少？",
-   options:["40%","45%","50%","55%"],answer:1,
-   law:"平均地權條例 §54（抵價地比例）",explain:"區段徵收抵價地原則不得少於40%；經農地重劃者，不得少於45%，故選B。"},
-  {sub:"土地法",src:"AI",q:"依房地合一稅制，個人出售持有期間2年以內之房地，其適用稅率為？",
-   options:["20%","35%","45%","15%"],answer:2,
-   law:"所得稅法 §14-4（房地合一2.0）",explain:"房地合一2.0下，個人持有2年以內出售境內房地，稅率為45%；逾2年未逾5年為35%。"},
-  {sub:"經紀法規",src:"歷屆",year:"114",q:"公寓大廈頂樓平台因年久失修防水層破損漏水，應由誰負修繕義務？",
-   options:["依區分所有權人會議決議","公寓大廈管理委員會","頂樓住戶","頂樓住戶與管委會共同負責"],answer:1,
-   law:"公寓大廈管理條例 §10",explain:"共用部分之修繕、管理、維護由管理負責人或管理委員會為之，費用由公共基金支付或全體分擔，故B正確。"},
-  {sub:"經紀法規",src:"歷屆",year:"114",q:"預售屋車位規格不符『應記載及不得記載事項』時，主管機關應優先適用何法裁罰？",
-   options:["公平交易法","平均地權條例","消費者保護法","不動產經紀業管理條例"],answer:2,
-   law:"消費者保護法 §17（定型化契約應記載事項）",explain:"違反中央主管機關公告之定型化契約應記載及不得記載事項，依消費者保護法裁處罰鍰，故選C。"},
-  {sub:"經紀法規",src:"歷屆",year:"114",q:"訪問交易消費者行使解除契約，下列何者正確？",
-   options:["僅能直接退回商品","經同意可口頭解約","解約無須說明理由且無庸負擔費用或價款","7天猶豫期得以特約排除"],answer:2,
-   law:"消費者保護法 §19（通訊/訪問交易7日猶豫期）",explain:"消費者得於收受商品後7日內，以退回商品或書面通知解除契約，且無須說明理由、不負擔任何費用或價款，該猶豫期不得以特約排除，故選C。"},
-  {sub:"經紀法規",src:"AI",q:"經紀業違反規定收取差價者，已收取之差價應如何處理？",
-   options:["原額返還","加計利息返還","加計利息後『加倍』返還支付人","沒收歸公"],answer:2,
-   law:"不動產經紀業管理條例 §19",explain:"經紀業或經紀人員不得收取差價或其他報酬；違反者已收取之差價應於加計利息後『加倍』返還支付人。"},
-  {sub:"經紀法規",src:"AI",q:"不動產經紀人證書之有效期限為幾年？",
-   options:["2年","3年","4年","6年"],answer:2,
-   law:"不動產經紀業管理條例 §15",explain:"經紀人證書有效期限為4年，期滿前應檢附4年內完成專業訓練30小時以上之證明辦理換證。"}
-];
+let BANK = [];                 // 題庫改為從雲端試算表載入
+let bankLoaded = false;
+let availableYears = [];       // 動態：題庫中出現過的年度（由大到小）
 const MAX_LV=9;
 // 9 階配置：索引 0 = Lv.1 ... 索引 8 = Lv.9
 const CHAR_TIERS=[
@@ -599,32 +539,30 @@ function renderBadges(){
 }
 function escapeHtml(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function lbRowsHtml(list){
-  const sorted=list.slice().sort((a,b)=> b.score-a.score || a.timeSpent-b.timeSpent);
+  const sorted=list.slice().sort((a,b)=> b.score-a.score);
   return sorted.map((r,i)=>{ const rk=i+1, cls=rk<=3?"top"+rk:"";
-    const ts=Number(r.timeSpent)||0;
-    const mm=String(Math.floor(ts/60)).padStart(2,"0")+":"+String(ts%60).padStart(2,"0");
     const cEmo=r.charEmoji||charTierOf(Number(r.charLv)||1).emoji;
     const stk=Number(r.streak)||0;
     const tail=r.codeTail||(r.code?String(r.code).slice(-2):"");
     const nameCell=escapeHtml(r.name)+(tail?' <span class="lb-tail">[**'+escapeHtml(tail)+']</span>':"");
-    return '<tr><td class="lb-rank '+cls+'">'+rk+'</td><td>'+nameCell+'</td><td class="lb-score">'+r.score+'</td><td>'+mm+'</td><td class="lb-streak">🔥 '+stk+'</td><td><span class="lb-veh">'+cEmo+'</span> Lv.'+(r.charLv||1)+'</td><td class="lb-veh">'+(r.vehEmoji||"🚲")+'</td></tr>';
+    return '<tr><td class="lb-rank '+cls+'">'+rk+'</td><td>'+nameCell+'</td><td class="lb-score">'+r.score+'</td><td class="lb-streak">🔥 '+stk+'</td><td><span class="lb-veh">'+cEmo+'</span> Lv.'+(r.charLv||1)+'</td><td class="lb-veh">'+(r.vehEmoji||"🚲")+'</td></tr>';
   }).join("");
 }
 function renderLeaderboard(){
   const body=document.getElementById("lbBody");
   const hint=document.getElementById("lbHint");
   if(lbView==="local"){
-    hint.textContent="本機個人紀錄，依得分高到低、同分則用時短者優先。";
+    hint.textContent="本機個人紀錄，依累計總分由高到低排序。";
     body.innerHTML = leaderboard.length ? lbRowsHtml(leaderboard)
-      : '<tr><td colspan="7" class="lb-empty">尚無本機紀錄，快去測驗刷榜！</td></tr>';
+      : '<tr><td colspan="6" class="lb-empty">尚無本機紀錄，快去測驗刷榜！</td></tr>';
     return;
   }
   // 雲端世界排行
-  hint.textContent="全球考生即時排行，依得分高到低、同分則用時短者優先。";
-  if(cloudState==="loading"){ body.innerHTML='<tr><td colspan="7" class="lb-loading">⏳ 載入雲端排行中…</td></tr>'; return; }
-  if(cloudState==="error"){ body.innerHTML='<tr><td colspan="7" class="lb-empty">⚠️ 雲端連線失敗，請按「重新整理雲端」再試。</td></tr>'; return; }
+  hint.textContent="全球考生即時排行，依累計總分由高到低排序。";
+  if(cloudState==="loading"){ body.innerHTML='<tr><td colspan="6" class="lb-loading">⏳ 載入雲端排行中…</td></tr>'; return; }
+  if(cloudState==="error"){ body.innerHTML='<tr><td colspan="6" class="lb-empty">⚠️ 雲端連線失敗，請按「重新整理雲端」再試。</td></tr>'; return; }
   body.innerHTML = cloudBoard.length ? lbRowsHtml(cloudBoard)
-    : '<tr><td colspan="7" class="lb-empty">雲端尚無紀錄，成為第一名吧！</td></tr>';
+    : '<tr><td colspan="6" class="lb-empty">雲端尚無紀錄，成為第一名吧！</td></tr>';
 }
 function fetchCloudLeaderboard(){
   cloudState="loading"; if(lbView==="world") renderLeaderboard();
@@ -651,6 +589,42 @@ function fetchCloudLeaderboard(){
     })
     .catch(err=>{ console.warn("雲端排行讀取失敗：",err); cloudState="error"; if(lbView==="world") renderLeaderboard(); });
 }
+/* ===== 從雲端載入題庫（四分頁合併）===== */
+function loadQuestionBank(){
+  const startBtn=document.getElementById("startBtn");
+  startBtn.disabled=true; startBtn.textContent="📥 題庫載入中…";
+  fetch(CLOUD_URL+"?action=questions",{method:"GET"})
+    .then(r=>r.json())
+    .then(data=>{
+      const list = Array.isArray(data) ? data : (data && (data.bank||data.questions||data.data)) || [];
+      BANK = (list||[]).map(q=>({
+        sub:q.sub||"", year:String(q.year||""),
+        q:q.q||"", options:Array.isArray(q.options)?q.options:[q.A,q.B,q.C,q.D],
+        answer:Number(q.answer)||0, explain:q.explain||""
+      })).filter(q=>q.q && q.options && q.options.length===4);
+      bankLoaded=true;
+      populateYearSelect();
+      startBtn.disabled = BANK.length===0;
+      const inf=document.querySelector('input[name="mode"]:checked').value==="infinity";
+      startBtn.textContent = BANK.length===0 ? "⚠️ 題庫為空" : (inf?"♾️ 開始無限挑戰":"🚀 開始測驗");
+      if(BANK.length>0) toast("題庫已載入："+BANK.length+" 題");
+    })
+    .catch(err=>{
+      console.warn("題庫載入失敗：",err);
+      bankLoaded=false; startBtn.disabled=true; startBtn.textContent="⚠️ 題庫載入失敗，點此重試";
+      startBtn.disabled=false;
+      startBtn.onclick=null;
+      toast("題庫載入失敗，請按按鈕重試");
+      startBtn.addEventListener("click",function retry(){ startBtn.removeEventListener("click",retry); loadQuestionBank(); },{once:true});
+    });
+}
+function populateYearSelect(){
+  const set={};
+  BANK.forEach(q=>{ if(q.year) set[q.year]=true; });
+  availableYears=Object.keys(set).sort((a,b)=>Number(b)-Number(a)); // 由大到小
+  const sel=document.getElementById("yearSel");
+  sel.innerHTML='<option value="ALL">全部年度</option>'+availableYears.map(y=>'<option value="'+y+'">'+y+' 年歷屆試題</option>').join("");
+}
 document.querySelectorAll(".tab").forEach(t=>{
   t.addEventListener("click",()=>{
     document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
@@ -659,10 +633,6 @@ document.querySelectorAll(".tab").forEach(t=>{
     document.getElementById("panel-"+t.dataset.tab).classList.add("active");
     if(t.dataset.tab==="leaderboard"){ if(lbView==="world" && (cloudState==="idle"||cloudState==="error")) fetchCloudLeaderboard(); else renderLeaderboard(); }
   });
-});
-document.getElementById("sourceRow").addEventListener("change",e=>{
-  document.querySelectorAll("#sourceRow .radio-chip").forEach(c=>c.classList.remove("sel"));
-  e.target.closest(".radio-chip").classList.add("sel");
 });
 document.getElementById("modeRow").addEventListener("change",e=>{
   document.querySelectorAll("#modeRow .radio-chip").forEach(c=>c.classList.remove("sel"));
@@ -674,9 +644,8 @@ document.getElementById("modeRow").addEventListener("change",e=>{
 });
 const KEYS=["A","B","C","D"];
 let exam=null, timerId=null;
-function pickQuestions(sub,src,count){
-  let pool=BANK.filter(q=>q.src===src && (sub==="綜合"||q.sub===sub));
-  if(pool.length<4) pool=BANK.filter(q=>(sub==="綜合"||q.sub===sub));
+function pickQuestions(sub,year,count){
+  let pool=BANK.filter(q=>(sub==="綜合"||q.sub===sub) && (year==="ALL"||String(q.year)===String(year)));
   if(pool.length===0) return [];
   pool=pool.slice().sort(()=>Math.random()-0.5);
   const out=[]; let i=0;
@@ -684,38 +653,37 @@ function pickQuestions(sub,src,count){
   return out;
 }
 document.getElementById("startBtn").addEventListener("click",()=>{
+  if(!bankLoaded || BANK.length===0){ toast("題庫尚未載入，請稍候或按重新整理"); return; }
   const name=document.getElementById("playerName").value.trim();
   const codeRaw=document.getElementById("playerCode").value.trim();
   if(codeRaw && !/^\d{4}$/.test(codeRaw)){ toast("驗證碼需為 4 碼數字"); return; }
   const code=codeRaw;
   save.name=name; save.code=code; persistSave();
   const sub=document.getElementById("subjectSel").value;
-  const src=document.querySelector('input[name="src"]:checked').value;
+  const year=document.getElementById("yearSel").value;
   const mode=document.querySelector('input[name="mode"]:checked').value;
   const isInfinityMode=mode==="infinity";
 
   if(isInfinityMode){
-    // 無限模式：建立一個夠大的循環題庫
-    const qs=pickQuestions(sub,src,200);
-    if(qs.length===0){ toast("此分類暫無題目"); return; }
-    exam={qs,name,code,sub,src,isInfinityMode:true,isBig:sub==="綜合",
+    const qs=pickQuestions(sub,year,200);
+    if(qs.length===0){ toast("此科目／年度暫無題目"); return; }
+    exam={qs,name,code,sub,year,isInfinityMode:true,isBig:sub==="綜合",
           idx:0,answered:0,correct:0,combo:0,comboBest:0,currentScore:0,score:0,
           finished:false,submitted:false,charGain:0,vehGain:0,startTs:Date.now(),timeSpent:0,lbId:null};
     document.getElementById("lobbyView").style.display="none";
     document.getElementById("examView").style.display="block";
-    document.getElementById("timer").style.display="none";          // 不顯示倒數
-    document.getElementById("submitBtn").style.display="none";       // 無限模式無「送出」鈕
+    document.getElementById("timer").style.display="none";
+    document.getElementById("submitBtn").style.display="none";
     renderInfinityQuestion();
     window.scrollTo({top:0,behavior:"smooth"});
     return;
   }
 
-  // 一般模式
   const count=+document.getElementById("countSel").value;
   const minutes=+document.getElementById("timeSel").value;
-  const qs=pickQuestions(sub,src,count);
-  if(qs.length===0){ toast("此分類暫無題目"); return; }
-  exam={qs,name,code,sub,src,minutes,isInfinityMode:false,isBig:sub==="綜合",answered:0,correct:0,combo:0,comboBest:0,score:0,
+  const qs=pickQuestions(sub,year,count);
+  if(qs.length===0){ toast("此科目／年度暫無題目"); return; }
+  exam={qs,name,code,sub,year,minutes,isInfinityMode:false,isBig:sub==="綜合",answered:0,correct:0,combo:0,comboBest:0,score:0,
         locked:Array(qs.length).fill(false),finished:false,submitted:false,
         charGain:0,vehGain:0,startTs:Date.now(),timeSpent:0,lbId:null};
   document.getElementById("lobbyView").style.display="none";
@@ -736,11 +704,11 @@ function renderQuiz(){
   exam.qs.forEach((it,qi)=>{
     const card=document.createElement("div");
     card.className="q-card"; card.style.animationDelay=(Math.min(qi,12)*0.04)+"s";
-    const srcTag=it.src==="歷屆"?(it.year+"年歷屆"):"AI模擬";
+    const yrTag=it.year?(it.year+"年歷屆"):"歷屆";
     const opts=it.options.map((o,oi)=>'<button class="opt" data-q="'+qi+'" data-o="'+oi+'"><span class="key">'+KEYS[oi]+'</span><span>'+o+'</span></button>').join("");
-    card.innerHTML='<div class="q-meta"><span class="tagp num">第 '+(qi+1)+' 題</span><span class="tagp sub">'+it.sub+'</span><span class="tagp src">'+srcTag+'</span></div>'
+    card.innerHTML='<div class="q-meta"><span class="tagp num">第 '+(qi+1)+' 題</span><span class="tagp sub">'+it.sub+'</span><span class="tagp src">'+yrTag+'</span></div>'
       +'<div class="q-text">'+it.q+'</div><div class="opts">'+opts+'</div>'
-      +'<div class="explain" id="exp-'+qi+'"><span class="law">📖 '+it.law+'</span><span class="vd" id="vd-'+qi+'"></span><div style="margin-top:6px">'+it.explain+'</div></div>';
+      +'<div class="explain" id="exp-'+qi+'"><span class="vd" id="vd-'+qi+'"></span><div style="margin-top:6px;white-space:pre-wrap">'+it.explain+'</div></div>';
     wrap.appendChild(card);
   });
 }
@@ -753,13 +721,13 @@ function renderInfinityQuestion(){
   document.getElementById("combo").textContent="🔥 Combo "+exam.combo;
   const it=exam.qs[exam.idx % exam.qs.length];
   exam._cur=it;
-  const srcTag=it.src==="歷屆"?(it.year+"年歷屆"):"AI模擬";
+  const yrTag=it.year?(it.year+"年歷屆"):"歷屆";
   const opts=it.options.map((o,oi)=>'<button class="opt" data-o="'+oi+'"><span class="key">'+KEYS[oi]+'</span><span>'+o+'</span></button>').join("");
   const card=document.createElement("div");
   card.className="q-card";
-  card.innerHTML='<div class="q-meta"><span class="tagp num">第 '+(exam.answered+1)+' 題（無限）</span><span class="tagp sub">'+it.sub+'</span><span class="tagp src">'+srcTag+'</span></div>'
+  card.innerHTML='<div class="q-meta"><span class="tagp num">第 '+(exam.answered+1)+' 題（無限）</span><span class="tagp sub">'+it.sub+'</span><span class="tagp src">'+yrTag+'</span></div>'
     +'<div class="q-text">'+it.q+'</div><div class="opts">'+opts+'</div>'
-    +'<div class="explain" id="exp-inf"><span class="law">📖 '+it.law+'</span><span class="vd" id="vd-inf"></span><div style="margin-top:6px">'+it.explain+'</div></div>';
+    +'<div class="explain" id="exp-inf"><span class="vd" id="vd-inf"></span><div style="margin-top:6px;white-space:pre-wrap">'+it.explain+'</div></div>';
   wrap.appendChild(card);
 }
 function handleInfinityAnswer(btn){
@@ -1067,7 +1035,7 @@ tg.addEventListener("click",()=>{
   const n=root.getAttribute("data-theme")==="dark"?"light":"dark";
   root.setAttribute("data-theme",n); tg.textContent=n==="dark"?"☀️":"🌙";
 });
-renderPlayer(); renderDaily(); renderLeaderboard(); fetchCloudLeaderboard();
+renderPlayer(); renderDaily(); renderLeaderboard(); fetchCloudLeaderboard(); loadQuestionBank();
 </script>
 </body>
 </html>
