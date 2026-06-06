@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>不動產經紀人 · 考試道場</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@600;700;900&display=swap');
 :root{
@@ -152,6 +153,26 @@ input.tf:focus,select.tf:focus,textarea.tf:focus{outline:none;border-color:var(-
 .daily-text{font-size:.85rem;color:var(--text-soft);margin-top:7px;font-weight:700}
 .lb-streak{font-weight:700}
 .lb-tail{font-size:.78rem;color:var(--text-soft);font-weight:700}
+.wb-item{border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:12px;background:var(--surface-2)}
+.wb-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.wb-del{border:1px solid var(--border);background:var(--surface);color:var(--wrong);font-weight:700;font-size:.78rem;padding:4px 12px;border-radius:999px;cursor:pointer}
+.wb-del:hover{background:var(--wrong-bg)}
+.wb-q{font-weight:500;margin-bottom:10px;line-height:1.6}
+.wb-opt{padding:6px 10px;border-radius:8px;font-size:.9rem;margin-bottom:4px}
+.wb-opt.correct{background:var(--correct-bg);color:var(--correct);font-weight:700}
+.wb-opt.wrong{background:var(--wrong-bg);color:var(--wrong);font-weight:700}
+.wb-exp{margin-top:10px;border-left:3px solid var(--accent);background:var(--surface);border-radius:0 8px 8px 0;padding:10px 12px;font-size:.86rem;white-space:pre-wrap;line-height:1.6}
+.wb-time{margin-top:8px;font-size:.72rem;color:var(--text-soft)}
+.wb-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.wb-chip{border:1.5px solid var(--border);background:var(--surface-2);color:var(--text-soft);font-family:var(--fb);font-weight:700;font-size:.85rem;padding:8px 14px;border-radius:999px;cursor:pointer;transition:all .18s}
+.wb-chip.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.law-row{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--border)}
+.law-row:last-child{border-bottom:none}
+.law-name{flex:1;font-size:.92rem;font-weight:500}
+.law-bar{height:8px;border-radius:999px;background:linear-gradient(90deg,var(--gold),var(--accent));min-width:8px}
+.law-cnt{font-family:var(--fd);font-weight:900;color:var(--accent);width:34px;text-align:right}
+.law-empty{color:var(--text-soft);font-size:.88rem;padding:16px 0;text-align:center}
+.law-title{font-weight:700;font-size:.92rem;margin-bottom:10px;color:var(--text-soft)}
 .lb-table{width:100%;border-collapse:collapse;font-size:.9rem}
 .lb-table th,.lb-table td{padding:11px 8px;text-align:left;border-bottom:1px solid var(--border)}
 .lb-table th{font-size:.74rem;color:var(--text-soft);font-weight:700;letter-spacing:.03em}
@@ -209,6 +230,7 @@ footer{text-align:center;color:var(--text-soft);font-size:.78rem;margin-top:36px
     <button class="tab active" data-tab="lobby">測驗大廳</button>
     <button class="tab" data-tab="garage">修煉場與車庫</button>
     <button class="tab" data-tab="leaderboard">風雲排行榜</button>
+    <button class="tab" data-tab="wrongbook">錯題本</button>
     <button class="tab" data-tab="feedback">意見回饋</button>
   </div>
   <section class="panel active" id="panel-lobby">
@@ -275,6 +297,7 @@ footer{text-align:center;color:var(--text-soft);font-size:.78rem;margin-top:36px
           <div class="radio-row" id="modeRow">
             <label class="radio-chip sel"><input type="radio" name="mode" value="normal" checked>📝 一般測驗</label>
             <label class="radio-chip"><input type="radio" name="mode" value="infinity">♾️ 無限挑戰（答錯即結束）</label>
+            <label class="radio-chip"><input type="radio" name="mode" value="conquer">🚩 闖關模式（答對不再出）</label>
           </div>
         </div>
         <button class="btn btn-full" id="startBtn" disabled>📥 題庫載入中…</button>
@@ -351,6 +374,40 @@ footer{text-align:center;color:var(--text-soft);font-size:.78rem;margin-top:36px
       </div>
     </div>
   </section>
+  <section class="panel" id="panel-wrongbook">
+    <div class="card">
+      <h2>📕 弱點分析</h2>
+      <p class="hint" style="margin-top:0">依你目前帳號（姓名+驗證碼）統計各大分類的錯題數，越往外代表錯越多。點下方科目可下鑽看常錯條號。</p>
+      <div style="max-width:420px;margin:10px auto"><canvas id="radarChart"></canvas></div>
+      <div id="radarEmpty" class="lb-empty" style="display:none">目前沒有錯題紀錄，先去測驗吧！</div>
+    </div>
+    <div class="card">
+      <div class="wb-filter" id="wbFilter">
+        <button class="wb-chip active" data-cat="ALL">全部</button>
+        <button class="wb-chip" data-cat="民法">民法概要</button>
+        <button class="wb-chip" data-cat="估價">不動產估價</button>
+        <button class="wb-chip" data-cat="土地法">土地法規</button>
+        <button class="wb-chip" data-cat="經紀法規">經紀法規</button>
+      </div>
+      <div id="lawStats"></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+        <h2 style="margin-bottom:0">📝 我的錯題本（<span id="wbCount">0</span>）</h2>
+        <button class="btn ghost" id="wbClearBtn">🗑️ 一鍵清空</button>
+      </div>
+      <div id="wbList"></div>
+    </div>
+    <div class="card">
+      <h2>💾 全進度備份 / 還原</h2>
+      <p class="hint" style="margin-top:0">一鍵備份「錯題本＋等級經驗徽章＋闖關進度」。換瀏覽器或清快取會消失，建議定期匯出保存（雲端排行總分另由雲端同步，不在此備份）。</p>
+      <div class="btn-row">
+        <button class="btn ghost" id="wbExportBtn">📤 匯出全進度（產生 JSON）</button>
+        <button class="btn ghost" id="wbImportBtn">📥 匯入還原（貼上 JSON）</button>
+      </div>
+      <textarea class="tf" id="wbJson" rows="6" placeholder="匯出的 JSON 會顯示在這裡；要匯入時把備份貼進來再按「匯入錯題」。" style="margin-top:12px"></textarea>
+    </div>
+  </section>
   <section class="panel" id="panel-feedback">
     <div class="card">
       <h2>📮 意見回饋</h2>
@@ -379,6 +436,178 @@ footer{text-align:center;color:var(--text-soft);font-size:.78rem;margin-top:36px
 let BANK = [];                 // 題庫改為從雲端試算表載入
 let bankLoaded = false;
 let availableYears = [];       // 動態：題庫中出現過的年度（由大到小）
+
+/* ============================================================
+   錯題本（LocalStorage）— 以「姓名+驗證碼」為 key
+   ============================================================ */
+// 為每題產生穩定 id：科目縮寫-年度-題幹前20字的雜湊
+const SUB_SLUG={ "民法":"civil","估價":"appr","土地法":"land","經紀法規":"agent" };
+function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))|0; } return (h>>>0).toString(36); }
+function makeQid(sub,year,qText){
+  const slug=SUB_SLUG[sub]||"misc";
+  return (year||"NA")+"-"+slug+"-"+hashStr((qText||"").slice(0,20));
+}
+// 目前使用者 key（無姓名時用「匿名」；驗證碼可空）
+function wbUserKey(){
+  const nm=(save.name||document.getElementById("playerName")?.value||"").trim()||"匿名";
+  const cd=(save.code||document.getElementById("playerCode")?.value||"").trim();
+  return "wrongbook:"+nm+(cd?("#"+cd):"");
+}
+function loadWrongBook(){
+  try{ const r=localStorage.getItem(wbUserKey()); return r?JSON.parse(r):[]; }
+  catch(e){ return (window.__wbMem&&window.__wbMem[wbUserKey()])||[]; }
+}
+function saveWrongBook(arr){
+  try{ localStorage.setItem(wbUserKey(), JSON.stringify(arr)); }
+  catch(e){ window.__wbMem=window.__wbMem||{}; window.__wbMem[wbUserKey()]=arr; }
+}
+// 答錯時記錄：同題已存在則只更新時間與選錯答案，不重複新增
+// 從詳解文字抓「○○法第○條 / §○ / 第○條」當作該題法條（路A：自動抓取）
+function extractLaws(text){
+  if(!text) return [];
+  const found=[], seen={};
+  function push(lawName, num, sub){
+    let key=(lawName?lawName+" ":"")+"第"+num+"條"+(sub?("之"+sub):"");
+    if(!seen[key]){ seen[key]=1; found.push(key); }
+  }
+  // 條號樣式：123 / 123-4 / 123之4（含「第123條之4」的條後之N）
+  var NUM="(\\d+)(?:\\s*[之\\-]\\s*(\\d+))?";
+  var TAIL="第?\\s*§?\\s*"+NUM+"\\s*條(?:\\s*之\\s*(\\d+))?";
+  // 先找「法名 + 第N條」當主錨點，並把其後連續的「、第M條」一起歸到同一部法
+  var reMain=new RegExp("([\\u4e00-\\u9fa5]{2,8}(?:法|條例|規則|細則|準則))\\s*((?:[、及和或]?\\s*"+TAIL+")+)","g");
+  var m;
+  while((m=reMain.exec(text))!==null){
+    var lawName=m[1];
+    var seg=m[2];
+    var reNum=new RegExp(TAIL,"g");
+    var n;
+    while((n=reNum.exec(seg))!==null){ push(lawName, n[1], n[2]||n[3]); }
+  }
+  // 若完全沒抓到法名，退而求其次抓單獨條號
+  if(found.length===0){
+    var reBare=new RegExp("(?:"+TAIL+"|§\\s*"+NUM+")","g");
+    while((m=reBare.exec(text))!==null){
+      var num=m[1]||m[4], sub=m[2]||m[3]||m[5];
+      if(num) push("", num, sub);
+    }
+  }
+  return found;
+}
+function recordWrong(item, userWrongAnswerIdx){
+  const book=loadWrongBook();
+  const i=book.findIndex(x=>x.id===item.id);
+  const laws=extractLaws(item.explain||"");
+  const entry={
+    id:item.id,
+    category:item.sub,                 // 對應原有大分類：民法/估價/土地法/經紀法規
+    subCategory:item.year||"",         // 細項用年度（無更細分類時）
+    laws:laws,                         // 路A：從詳解抓出的條號（陣列）
+    question:item.qt||item.q||"",
+    options:item.options||[],
+    correctAnswer:item.answer,
+    userWrongAnswer:userWrongAnswerIdx,
+    explain:item.explain||"",
+    timestamp:new Date().toISOString()
+  };
+  if(i>=0){ book[i].userWrongAnswer=userWrongAnswerIdx; book[i].timestamp=entry.timestamp; book[i].laws=laws; }
+  else book.push(entry);
+  saveWrongBook(book);
+}
+// 統計某科目下「各條號」錯題數，由多到少
+function wrongStatsByLaw(category){
+  const counts={};
+  loadWrongBook().forEach(e=>{
+    if(e.category!==category) return;
+    const laws=(e.laws&&e.laws.length)?e.laws:["（未標註條號）"];
+    laws.forEach(l=>{ counts[l]=(counts[l]||0)+1; });
+  });
+  return Object.keys(counts).map(l=>({law:l,count:counts[l]})).sort((a,b)=>b.count-a.count);
+}
+function removeWrong(id){ saveWrongBook(loadWrongBook().filter(x=>x.id!==id)); }
+function clearWrongBook(cat){
+  if(!cat||cat==="ALL"){ saveWrongBook([]); return; }
+  saveWrongBook(loadWrongBook().filter(e=>e.category!==cat));
+}
+// 統計各大分類錯題數（給雷達圖）
+function wrongStatsByCategory(){
+  const cats=["民法","估價","土地法","經紀法規"];
+  const labelMap={ "民法":"民法概要","估價":"不動產估價","土地法":"土地法規","經紀法規":"經紀法規" };
+  const counts={}; cats.forEach(c=>counts[c]=0);
+  loadWrongBook().forEach(e=>{ if(counts.hasOwnProperty(e.category)) counts[e.category]++; });
+  return { labels:cats.map(c=>labelMap[c]), data:cats.map(c=>counts[c]), raw:counts };
+}
+// 匯出：全進度備份（錯題 + 闖關 + 等級經驗徽章存檔）
+function exportWrongBook(){
+  const payload={
+    _type:"reExamBackup",
+    _version:2,
+    _exportedAt:new Date().toISOString(),
+    account:(save.name||"")+(save.code?("#"+save.code):""),
+    wrongBook:loadWrongBook(),
+    save:save                       // 含 charExp/vehExp/badges/streak/conquerDone/conquerCleared 等
+  };
+  return JSON.stringify(payload,null,2);
+}
+// 匯入：支援 v2 全備份，也相容 v1（純錯題陣列）
+function importWrongBook(jsonStr){
+  let incoming;
+  try{ incoming=JSON.parse(jsonStr); }catch(e){ return {ok:false,msg:"JSON 格式錯誤，無法解析"}; }
+
+  // v1：純錯題陣列 → 只合併錯題
+  if(Array.isArray(incoming)){
+    return mergeWrongOnly_(incoming, "（舊版備份）錯題");
+  }
+  // v2：完整備份物件
+  if(incoming && incoming._type==="reExamBackup"){
+    let msgs=[];
+    // 1) 錯題合併
+    if(Array.isArray(incoming.wrongBook)){
+      const r=mergeWrongOnly_(incoming.wrongBook,"錯題");
+      msgs.push("錯題 "+r.count+" 題");
+    }
+    // 2) 存檔還原（含闖關進度、等級經驗徽章）
+    if(incoming.save && typeof incoming.save==="object"){
+      const incSave=incoming.save;
+      // 數值型取較大值，避免覆蓋掉本機已更高的進度
+      save.charExp=Math.max(save.charExp||0, incSave.charExp||0);
+      save.vehExp=Math.max(save.vehExp||0, incSave.vehExp||0);
+      save.totalCorrect=Math.max(save.totalCorrect||0, incSave.totalCorrect||0);
+      save.comboBest=Math.max(save.comboBest||0, incSave.comboBest||0);
+      save.streak=Math.max(save.streak||0, incSave.streak||0);
+      if(incSave.lastCheckIn && (!save.lastCheckIn || incSave.lastCheckIn>save.lastCheckIn)) save.lastCheckIn=incSave.lastCheckIn;
+      if(incSave.name && !save.name) save.name=incSave.name;
+      if(incSave.code && !save.code) save.code=incSave.code;
+      // 徽章聯集
+      save.badges=Object.assign({}, save.badges||{}, incSave.badges||{});
+      // 闖關完成次數取較大值
+      ["民法","估價","土地法","經紀法規"].forEach(s=>{
+        const a=(save.conquerDone&&save.conquerDone[s])||0;
+        const b=(incSave.conquerDone&&incSave.conquerDone[s])||0;
+        if(!save.conquerDone) save.conquerDone={};
+        save.conquerDone[s]=Math.max(a,b);
+      });
+      // 闖關當輪已攻克名單：聯集
+      if(incSave.conquerCleared){
+        save.conquerCleared=save.conquerCleared||{};
+        Object.keys(incSave.conquerCleared).forEach(s=>{
+          save.conquerCleared[s]=Object.assign({}, save.conquerCleared[s]||{}, incSave.conquerCleared[s]||{});
+        });
+      }
+      persistSave(); renderPlayer();
+      msgs.push("等級經驗與闖關進度");
+    }
+    return {ok:true, msg:"已還原："+msgs.join("、")};
+  }
+  return {ok:false,msg:"無法辨識的備份格式"};
+}
+function mergeWrongOnly_(arr, label){
+  const book=loadWrongBook(); const map={};
+  book.forEach(e=>map[e.id]=e);
+  arr.forEach(e=>{ if(e&&e.id){ if(!map[e.id]||new Date(e.timestamp)>new Date(map[e.id].timestamp)) map[e.id]=e; } });
+  const merged=Object.keys(map).map(k=>map[k]);
+  saveWrongBook(merged);
+  return {ok:true,msg:"已匯入並合併"+label+"，目前共 "+merged.length+" 題",count:merged.length};
+}
 const MAX_LV=9;
 // 9 階配置：索引 0 = Lv.1 ... 索引 8 = Lv.9
 const CHAR_TIERS=[
@@ -409,7 +638,15 @@ const BADGES=[
   {id:"superCar",ic:"🛸",nm:"飛碟車主",ds:"座駕進化到最高階"},
   {id:"comboMaster",ic:"🔥",nm:"連擊大師",ds:"單次Combo達10以上"},
   {id:"allRounder",ic:"🌍",nm:"全能經紀",ds:"完成5次綜合大會考"},
-  {id:"tycoon",ic:"💰",nm:"簽約大亨",ds:"累計答對100題以上"}
+  {id:"tycoon",ic:"💰",nm:"簽約大亨",ds:"累計答對100題以上"},
+  {id:"cq_民法",ic:"⚖️",nm:"民法闖關王",ds:"闖關完成民法概要1次"},
+  {id:"cq_估價",ic:"📐",nm:"估價闖關王",ds:"闖關完成不動產估價1次"},
+  {id:"cq_土地法",ic:"🏞️",nm:"土地闖關王",ds:"闖關完成土地法規1次"},
+  {id:"cq_經紀法規",ic:"📋",nm:"經紀闖關王",ds:"闖關完成經紀法規1次"},
+  {id:"cq_allSubjects",ic:"👑",nm:"四科全制霸",ds:"四科各闖關完成至少1次"},
+  {id:"cq_40",ic:"🥉",nm:"闖關達人",ds:"闖關累計完成40次"},
+  {id:"cq_70",ic:"🥈",nm:"闖關大師",ds:"闖關累計完成70次"},
+  {id:"cq_100",ic:"🏆",nm:"闖關宗師",ds:"闖關累計完成100次"}
 ];
 const EXP_PER_LV=100, EXP_PER_CORRECT=2;
 const KEY="re_exam_save_v2", LB_KEY="re_exam_lb_v2";
@@ -420,8 +657,12 @@ let cloudState="idle";       // idle | loading | ok | error
 let memSave=null, memLb=null;
 function readLS(k,memRef){ try{const r=localStorage.getItem(k);return r?JSON.parse(r):null;}catch(e){return memRef;} }
 function writeLS(k,obj,setMem){ try{localStorage.setItem(k,JSON.stringify(obj));}catch(e){setMem(JSON.parse(JSON.stringify(obj)));} }
-function defaultSave(){return{name:"",code:"",charExp:0,vehExp:0,badges:{},totalCorrect:0,comboBest:0,bigExamCount:0,lastSubmit:null,streak:0,lastCheckIn:"",todayDate:"",todayAnswered:0,todayCorrect:0,checkedToday:false};}
+function defaultSave(){return{name:"",code:"",charExp:0,vehExp:0,badges:{},totalCorrect:0,comboBest:0,bigExamCount:0,lastSubmit:null,streak:0,lastCheckIn:"",todayDate:"",todayAnswered:0,todayCorrect:0,checkedToday:false,
+  conquerDone:{民法:0,估價:0,土地法:0,經紀法規:0}, conquerCleared:{}};}
 let save=Object.assign(defaultSave(), readLS(KEY,memSave)||{});
+if(!save.conquerDone) save.conquerDone={民法:0,估價:0,土地法:0,經紀法規:0};
+["民法","估價","土地法","經紀法規"].forEach(s=>{ if(save.conquerDone[s]==null) save.conquerDone[s]=0; });
+if(!save.conquerCleared) save.conquerCleared={};
 let leaderboard=readLS(LB_KEY,memLb)||[];
 function persistSave(){ writeLS(KEY,save,v=>memSave=v); }
 function persistLb(){ writeLS(LB_KEY,leaderboard,v=>memLb=v); }
@@ -597,11 +838,15 @@ function loadQuestionBank(){
     .then(r=>r.json())
     .then(data=>{
       const list = Array.isArray(data) ? data : (data && (data.bank||data.questions||data.data)) || [];
-      BANK = (list||[]).map(q=>({
-        sub:q.sub||"", year:String(q.year||""),
-        q:q.q||"", options:Array.isArray(q.options)?q.options:[q.A,q.B,q.C,q.D],
-        answer:Number(q.answer)||0, explain:q.explain||""
-      })).filter(q=>q.q && q.options && q.options.length===4);
+      BANK = (list||[]).map(q=>{
+        const sub=q.sub||"", year=String(q.year||""), qt=q.q||"";
+        return {
+          id: makeQid(sub,year,qt),
+          sub:sub, year:year, qt:qt, q:qt,
+          options:Array.isArray(q.options)?q.options:[q.A,q.B,q.C,q.D],
+          answer:Number(q.answer)||0, explain:q.explain||""
+        };
+      }).filter(q=>q.q && q.options && q.options.length===4);
       bankLoaded=true;
       populateYearSelect();
       startBtn.disabled = BANK.length===0;
@@ -632,15 +877,27 @@ document.querySelectorAll(".tab").forEach(t=>{
     t.classList.add("active");
     document.getElementById("panel-"+t.dataset.tab).classList.add("active");
     if(t.dataset.tab==="leaderboard"){ if(lbView==="world" && (cloudState==="idle"||cloudState==="error")) fetchCloudLeaderboard(); else renderLeaderboard(); }
+    if(t.dataset.tab==="wrongbook"){ renderWrongBook(); }
   });
 });
 document.getElementById("modeRow").addEventListener("change",e=>{
   document.querySelectorAll("#modeRow .radio-chip").forEach(c=>c.classList.remove("sel"));
   e.target.closest(".radio-chip").classList.add("sel");
-  const inf=e.target.value==="infinity";
-  document.getElementById("countSel").disabled=inf;
-  document.getElementById("timeSel").disabled=inf;
-  document.getElementById("startBtn").textContent=inf?"♾️ 開始無限挑戰":"🚀 開始測驗";
+  const mode=e.target.value;
+  const noTimer=(mode==="infinity"||mode==="conquer");
+  document.getElementById("countSel").disabled=noTimer;
+  document.getElementById("timeSel").disabled=noTimer;
+  // 闖關模式不提供「綜合」
+  const subSel=document.getElementById("subjectSel");
+  const hasZong=Array.from(subSel.options).some(o=>o.value==="綜合");
+  if(mode==="conquer"){
+    if(hasZong){ Array.from(subSel.options).forEach(o=>{ if(o.value==="綜合") o.remove(); }); }
+    if(subSel.value==="綜合"||!subSel.value) subSel.value="民法";
+  }else{
+    if(!hasZong){ const op=document.createElement("option"); op.value="綜合"; op.textContent="綜合大會考（全科目隨機）"; subSel.appendChild(op); }
+  }
+  const btn=document.getElementById("startBtn");
+  btn.textContent = mode==="infinity"?"♾️ 開始無限挑戰":(mode==="conquer"?"🚩 開始闖關":"🚀 開始測驗");
 });
 const KEYS=["A","B","C","D"];
 let exam=null, timerId=null;
@@ -651,6 +908,13 @@ function pickQuestions(sub,year,count){
   const out=[]; let i=0;
   while(out.length<count){ out.push(pool[i%pool.length]); i++; if(i%pool.length===0) pool.sort(()=>Math.random()-0.5); }
   return out;
+}
+// 闖關：取該科「尚未攻克」的題（依本科 cleared 名單排除），洗牌
+function conquerPool(sub){
+  const cleared=(save.conquerCleared&&save.conquerCleared[sub])||{};
+  let all=BANK.filter(q=>q.sub===sub);
+  let remain=all.filter(q=>!cleared[q.id]);
+  return { all:all, remain:remain.slice().sort(()=>Math.random()-0.5) };
 }
 document.getElementById("startBtn").addEventListener("click",()=>{
   if(!bankLoaded || BANK.length===0){ toast("題庫尚未載入，請稍候或按重新整理"); return; }
@@ -663,6 +927,29 @@ document.getElementById("startBtn").addEventListener("click",()=>{
   const year=document.getElementById("yearSel").value;
   const mode=document.querySelector('input[name="mode"]:checked').value;
   const isInfinityMode=mode==="infinity";
+  const isConquerMode=mode==="conquer";
+
+  if(isConquerMode){
+    if(sub==="綜合"){ toast("闖關模式請選單一科目"); return; }
+    const cp=conquerPool(sub);
+    if(cp.all.length===0){ toast("此科目暫無題目"); return; }
+    if(cp.remain.length===0){
+      // 理論上不會發生（攻克後即重置），保險處理
+      save.conquerCleared[sub]={}; persistSave();
+      return document.getElementById("startBtn").click();
+    }
+    exam={qs:cp.remain,totalInSub:cp.all.length,name,code,sub,year:"ALL",
+          isConquerMode:true,isInfinityMode:false,isBig:false,
+          idx:0,answered:0,correct:0,combo:0,comboBest:0,currentScore:0,score:0,
+          finished:false,submitted:false,charGain:0,vehGain:0,startTs:Date.now(),timeSpent:0,lbId:null};
+    document.getElementById("lobbyView").style.display="none";
+    document.getElementById("examView").style.display="block";
+    document.getElementById("timer").style.display="none";
+    document.getElementById("submitBtn").style.display="none";
+    renderConquerQuestion();
+    window.scrollTo({top:0,behavior:"smooth"});
+    return;
+  }
 
   if(isInfinityMode){
     const qs=pickQuestions(sub,year,200);
@@ -738,7 +1025,7 @@ function handleInfinityAnswer(btn){
   const card=btn.closest(".q-card");
   card.querySelectorAll(".opt").forEach((o,idx)=>{o.disabled=true; if(idx===correctIdx)o.classList.add("correct");});
   const isRight=oi===correctIdx;
-  if(!isRight) btn.classList.add("wrong");
+  if(!isRight){ btn.classList.add("wrong"); recordWrong(exam._cur, oi); }
 
   exam.answered++;
   const justChecked=addDailyAnswers(1, isRight?1:0);
@@ -809,9 +1096,97 @@ function handleGameOver(){
   exam.submitted=true;
   submitInfinityScore(uniqueId, exam.currentScore, exam.comboBest, exam.correct, rec);
 }
+/* ===== 闖關模式 ===== */
+function renderConquerQuestion(){
+  const wrap=document.getElementById("quiz"); wrap.innerHTML="";
+  document.getElementById("result").classList.remove("show");
+  document.getElementById("withdrawBtn").style.display="none";
+  const cleared=(save.conquerCleared[exam.sub]||{});
+  const clearedCount=exam.totalInSub-exam.qs.length+exam.idx; // 已攻克數（本輪）
+  document.getElementById("scoreNow").textContent="已攻克 "+Object.keys(cleared).length+"/"+exam.totalInSub;
+  document.getElementById("combo").textContent="🚩 第 "+(save.conquerDone[exam.sub]+1)+" 輪";
+  exam._locked=false;
+  const it=exam.qs[exam.idx];
+  exam._cur=it;
+  const yrTag=it.year?(it.year+"年歷屆"):"歷屆";
+  const opts=it.options.map((o,oi)=>'<button class="opt" data-o="'+oi+'"><span class="key">'+KEYS[oi]+'</span><span>'+o+'</span></button>').join("");
+  const card=document.createElement("div");
+  card.className="q-card";
+  card.innerHTML='<div class="q-meta"><span class="tagp num">闖關 '+(exam.idx+1)+'/'+exam.qs.length+'</span><span class="tagp sub">'+it.sub+'</span><span class="tagp src">'+yrTag+'</span></div>'
+    +'<div class="q-text">'+it.q+'</div><div class="opts">'+opts+'</div>'
+    +'<div class="explain" id="exp-cq"><span class="vd" id="vd-cq"></span><div style="margin-top:6px;white-space:pre-wrap">'+it.explain+'</div></div>';
+  wrap.appendChild(card);
+}
+function handleConquerAnswer(btn){
+  if(exam._locked) return;
+  exam._locked=true;
+  const oi=+btn.dataset.o;
+  const correctIdx=exam._cur.answer;
+  const card=btn.closest(".q-card");
+  card.querySelectorAll(".opt").forEach((o,idx)=>{o.disabled=true; if(idx===correctIdx)o.classList.add("correct");});
+  const isRight=oi===correctIdx;
+
+  exam.answered++;
+  const justChecked=addDailyAnswers(1, isRight?1:0);
+  renderDaily();
+  if(justChecked) toast("🔥 今日打卡成功！連勝 "+save.streak+" 天");
+
+  const vd=document.getElementById("vd-cq");
+  document.getElementById("exp-cq").classList.add("show");
+
+  if(isRight){
+    // 攻克本題：加入 cleared，學識 EXP +2
+    exam.correct++;
+    if(!save.conquerCleared[exam.sub]) save.conquerCleared[exam.sub]={};
+    save.conquerCleared[exam.sub][exam._cur.id]=1;
+    save.charExp+=EXP_PER_CORRECT; save.totalCorrect++;
+    persistSave(); renderPlayer();
+    vd.textContent="　✓ 攻克！"; vd.style.color="var(--correct)";
+    exam.idx++;
+    // 是否整科攻克完成？
+    if(exam.idx>=exam.qs.length){
+      setTimeout(()=>conquerRoundComplete(), 700);
+    }else{
+      setTimeout(()=>renderConquerQuestion(), 700);
+    }
+  }else{
+    // 答錯：記錯題、不算攻克，該題稍後會再出現（移到隊伍最後）
+    btn.classList.add("wrong");
+    recordWrong(exam._cur, oi);
+    vd.textContent="　✗ 答錯，正解為 "+KEYS[correctIdx]+"（此題稍後會再出現）";
+    vd.style.color="var(--wrong)";
+    const wrongQ=exam.qs.splice(exam.idx,1)[0];
+    exam.qs.push(wrongQ);   // 移到最後，本輪還要再答對才算攻克
+    setTimeout(()=>renderConquerQuestion(), 1100);
+  }
+}
+function conquerRoundComplete(){
+  const sub=exam.sub;
+  save.conquerDone[sub]=(save.conquerDone[sub]||0)+1;
+  save.conquerCleared[sub]={};   // 重置本科進度，可再闖一次
+  // 徽章判定
+  const subBadge="cq_"+sub;
+  if(BADGES.some(b=>b.id===subBadge)) save.badges[subBadge]=true;
+  const allFour=["民法","估價","土地法","經紀法規"].every(s=>(save.conquerDone[s]||0)>=1);
+  if(allFour) save.badges.cq_allSubjects=true;
+  const totalDone=Object.keys(save.conquerDone).reduce((a,k)=>a+(save.conquerDone[k]||0),0);
+  if(totalDone>=40) save.badges.cq_40=true;
+  if(totalDone>=70) save.badges.cq_70=true;
+  if(totalDone>=100) save.badges.cq_100=true;
+  persistSave(); renderPlayer();
+
+  exam.finished=true;
+  const subLabel={ "民法":"民法概要","估價":"不動產估價","土地法":"土地法規","經紀法規":"經紀法規" }[sub]||sub;
+  document.getElementById("finalScore").textContent="🚩";
+  document.getElementById("comment").textContent="🎉 恭喜攻克「"+subLabel+"」全部題目！這是你第 "+save.conquerDone[sub]+" 次完成本科。";
+  document.getElementById("lvlupMsg").textContent="闖關累計完成 "+totalDone+" 次　·　題目已重置，可再挑戰一輪！";
+  document.getElementById("result").classList.add("show");
+  document.getElementById("result").scrollIntoView({behavior:"smooth",block:"center"});
+}
 document.getElementById("quiz").addEventListener("click",e=>{
   const btn=e.target.closest(".opt");
   if(!btn||exam.finished) return;
+  if(exam.isConquerMode){ handleConquerAnswer(btn); return; }
   if(exam.isInfinityMode){ handleInfinityAnswer(btn); return; }
   const qi=+btn.dataset.q, oi=+btn.dataset.o;
   if(exam.locked[qi]) return;
@@ -820,7 +1195,7 @@ document.getElementById("quiz").addEventListener("click",e=>{
   const card=btn.closest(".q-card");
   card.querySelectorAll(".opt").forEach((o,idx)=>{o.disabled=true; if(idx===correctIdx)o.classList.add("correct");});
   const isRight=oi===correctIdx;
-  if(!isRight) btn.classList.add("wrong");
+  if(!isRight){ btn.classList.add("wrong"); recordWrong(exam.qs[qi], oi); }
   exam.answered++;
   const justChecked=addDailyAnswers(1, isRight?1:0);
   renderDaily();
@@ -1034,8 +1409,137 @@ tg.textContent=prefersDark?"☀️":"🌙";
 tg.addEventListener("click",()=>{
   const n=root.getAttribute("data-theme")==="dark"?"light":"dark";
   root.setAttribute("data-theme",n); tg.textContent=n==="dark"?"☀️":"🌙";
+  if(typeof radarChart!=="undefined" && radarChart) renderRadar();
 });
-renderPlayer(); renderDaily(); renderLeaderboard(); fetchCloudLeaderboard(); loadQuestionBank();
-</script>
+/* ============================================================
+   錯題本 UI ＋ 弱點雷達圖
+   ============================================================ */
+let radarChart=null;
+function renderRadar(){
+  const stats=wrongStatsByCategory();
+  const total=stats.data.reduce((a,b)=>a+b,0);
+  const empty=document.getElementById("radarEmpty");
+  const canvas=document.getElementById("radarChart");
+  if(total===0){ empty.style.display="block"; canvas.style.display="none"; if(radarChart){radarChart.destroy();radarChart=null;} return; }
+  empty.style.display="none"; canvas.style.display="block";
+  const isDark=document.documentElement.getAttribute("data-theme")==="dark";
+  const grid=isDark?"rgba(255,255,255,.12)":"rgba(0,0,0,.1)";
+  const tick=isDark?"#a4a195":"#6f6d65";
+  const accent=isDark?"#e08568":"#b8472f";
+  if(typeof Chart==="undefined"){ console.warn("Chart.js 未載入"); return; }
+  if(radarChart) radarChart.destroy();
+  radarChart=new Chart(canvas.getContext("2d"),{
+    type:"radar",
+    data:{ labels:stats.labels, datasets:[{
+      label:"錯題數", data:stats.data,
+      backgroundColor:accent+"33", borderColor:accent, borderWidth:2,
+      pointBackgroundColor:accent, pointRadius:4
+    }]},
+    options:{
+      responsive:true,
+      onClick:(evt,els)=>{
+        if(!els||!els.length) return;
+        const idx=els[0].index;
+        const catOrder=["民法","估價","土地法","經紀法規"];
+        if(catOrder[idx]) setWbFilter(catOrder[idx]);
+      },
+      scales:{ r:{
+        beginAtZero:true, ticks:{stepSize:1,color:tick,backdropColor:"transparent"},
+        grid:{color:grid}, angleLines:{color:grid},
+        pointLabels:{color:tick,font:{size:13,weight:"700"}}
+      }},
+      plugins:{ legend:{display:false} }
+    }
+  });
+}
+let wbFilter="ALL";   // 目前科目篩選：ALL 或 民法/估價/土地法/經紀法規
+const CAT_LABEL={ "民法":"民法概要","估價":"不動產估價","土地法":"土地法規","經紀法規":"經紀法規" };
+function renderWrongList(){
+  let book=loadWrongBook().slice().sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+  if(wbFilter!=="ALL") book=book.filter(e=>e.category===wbFilter);
+  document.getElementById("wbCount").textContent=book.length;
+  const wrap=document.getElementById("wbList");
+  if(book.length===0){
+    wrap.innerHTML='<div class="lb-empty">'+(wbFilter==="ALL"?"錯題本是空的，繼續加油！":"此科目目前沒有錯題 👍")+'</div>';
+    return;
+  }
+  wrap.innerHTML=book.map(e=>{
+    const opts=(e.options||[]).map((o,i)=>{
+      let cls=""; if(i===e.correctAnswer)cls="correct"; else if(i===e.userWrongAnswer)cls="wrong";
+      return '<div class="wb-opt '+cls+'"><b>'+KEYS[i]+'.</b> '+escapeHtml(String(o))+'</div>';
+    }).join("");
+    const dt=new Date(e.timestamp); const ds=isNaN(dt)?"":(dt.getMonth()+1)+"/"+dt.getDate();
+    const lawTag=(e.laws&&e.laws.length)?' <span class="lb-tail">'+escapeHtml(e.laws[0])+(e.laws.length>1?(" 等"+e.laws.length+"條"):"")+'</span>':"";
+    return '<div class="wb-item"><div class="wb-head"><span class="tagp sub">'+(CAT_LABEL[e.category]||e.category)+(e.subCategory?(" · "+e.subCategory+"年"):"")+'</span>'+lawTag
+      +'<button class="wb-del" data-id="'+e.id+'">移除</button></div>'
+      +'<div class="wb-q">'+escapeHtml(e.question||"")+'</div>'
+      +'<div class="wb-opts">'+opts+'</div>'
+      +(e.explain?'<div class="wb-exp">'+escapeHtml(e.explain)+'</div>':"")
+      +'<div class="wb-time">記錄於 '+ds+'</div></div>';
+  }).join("");
+}
+// 條號排行：ALL 時提示點科目；選某科時列出該科常錯條號
+function renderLawStats(){
+  const box=document.getElementById("lawStats");
+  if(wbFilter==="ALL"){
+    box.innerHTML='<div class="law-empty">點上方任一科目，即可看到該科「常錯條號」排行。</div>';
+    return;
+  }
+  const rows=wrongStatsByLaw(wbFilter);
+  if(rows.length===0){ box.innerHTML='<div class="law-empty">此科目目前沒有錯題。</div>'; return; }
+  const max=rows[0].count;
+  box.innerHTML='<div class="law-title">'+CAT_LABEL[wbFilter]+'：常錯條號排行</div>'+rows.map(r=>
+    '<div class="law-row"><div class="law-name">'+escapeHtml(r.law)+'</div>'
+    +'<div class="law-bar" style="width:'+Math.max(8,Math.round(r.count/max*120))+'px"></div>'
+    +'<div class="law-cnt">'+r.count+'</div></div>'
+  ).join("");
+}
+function setWbFilter(cat){
+  wbFilter=cat;
+  document.querySelectorAll("#wbFilter .wb-chip").forEach(c=>c.classList.toggle("active",c.dataset.cat===cat));
+  const clr=document.getElementById("wbClearBtn");
+  if(clr) clr.textContent = (cat==="ALL")?"🗑️ 清空全部":("🗑️ 清空"+(CAT_LABEL[cat]||cat));
+  renderLawStats(); renderWrongList();
+}
+function renderWrongBook(){ renderRadar(); renderLawStats(); renderWrongList(); }
+
+document.getElementById("wbFilter").addEventListener("click",e=>{
+  const c=e.target.closest(".wb-chip"); if(!c) return;
+  setWbFilter(c.dataset.cat);
+});
+
+document.getElementById("wbList").addEventListener("click",e=>{
+  const b=e.target.closest(".wb-del"); if(!b) return;
+  removeWrong(b.dataset.id); renderWrongBook(); toast("已從錯題本移除");
+});
+document.getElementById("wbClearBtn").addEventListener("click",()=>{
+  const all=loadWrongBook();
+  if(wbFilter==="ALL"){
+    if(all.length===0){ toast("錯題本已是空的"); return; }
+    if(!confirm("目前顯示「全部科目」，確定清空整本錯題本？無法復原。")) return;
+    clearWrongBook("ALL"); renderWrongBook(); toast("整本錯題本已清空");
+  }else{
+    const n=all.filter(e=>e.category===wbFilter).length;
+    if(n===0){ toast("此科目沒有錯題可清"); return; }
+    if(!confirm("確定清空「"+(CAT_LABEL[wbFilter]||wbFilter)+"」的 "+n+" 題錯題？其他科目不受影響。")) return;
+    clearWrongBook(wbFilter); renderWrongBook(); toast("已清空「"+(CAT_LABEL[wbFilter]||wbFilter)+"」錯題");
+  }
+});
+document.getElementById("wbExportBtn").addEventListener("click",()=>{
+  const json=exportWrongBook();
+  const ta=document.getElementById("wbJson"); ta.value=json;
+  ta.select();
+  try{ navigator.clipboard.writeText(json); toast("已匯出並複製到剪貼簿"); }
+  catch(e){ toast("已產生 JSON，請手動複製"); }
+});
+document.getElementById("wbImportBtn").addEventListener("click",()=>{
+  const v=document.getElementById("wbJson").value.trim();
+  if(!v){ toast("請先把備份 JSON 貼到下方框內"); return; }
+  const res=importWrongBook(v);
+  toast(res.msg);
+  if(res.ok) renderWrongBook();
+});
+
+renderPlayer(); renderDaily(); renderLeaderboard(); fetchCloudLeaderboard(); loadQuestionBank();</script>
 </body>
 </html>
